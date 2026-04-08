@@ -1,0 +1,45 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & Publish Release
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+
+      - name: Test
+        run: dotnet test tests/WinSysMcp.Tests -c Debug
+
+      - name: Publish AOT (arm64)
+        run: dotnet publish src/WinSysMcp -c Release -r win-arm64 -o publish/arm64
+
+      - name: Publish AOT (x64)
+        run: dotnet publish src/WinSysMcp -c Release -r win-x64 -o publish/x64
+
+      - name: Rename binaries
+        shell: pwsh
+        run: |
+          Copy-Item publish/arm64/winsysmcp.exe publish/winsysmcp-win-arm64.exe
+          Copy-Item publish/x64/winsysmcp.exe   publish/winsysmcp-win-x64.exe
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            publish/winsysmcp-win-arm64.exe
+            publish/winsysmcp-win-x64.exe
+          generate_release_notes: true
