@@ -7,6 +7,17 @@
     <Nullable>enable</Nullable>
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
     <EnableAotAnalyzer>true</EnableAotAnalyzer>
+    <IsPackable>true</IsPackable>
+    <PackageId>WinSysMcp</PackageId>
+    <Authors>WinSysMcp Contributors</Authors>
+    <Description>Windows system diagnostics and management MCP server for AI agents and MCP clients.</Description>
+    <PackageTags>mcp;model-context-protocol;windows;diagnostics</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/snickler/WinSysMcp</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/snickler/WinSysMcp</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
@@ -32,6 +43,10 @@
     <Compile Remove="Tools\WmiTools.cs" />
     <Compile Remove="Tools\ReliabilityTools.cs" />
     <Compile Remove="Tools\PowerAndSecurityTools.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
 </Project>

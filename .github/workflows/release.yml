@@ -24,6 +24,15 @@ jobs:
       - name: Test
         run: dotnet test tests/WinSysMcp.Tests -c Debug
 
+      - name: Set package version
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart('v')
+          "PACKAGE_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Pack NuGet package
+        run: dotnet pack src/WinSysMcp -c Debug -o artifacts/packages /p:Version=${{ env.PACKAGE_VERSION }}
+
       - name: Publish AOT (arm64)
         run: dotnet publish src/WinSysMcp -c Release -r win-arm64 -o publish/arm64
 
@@ -40,6 +49,19 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
+            artifacts/packages/*.nupkg
             publish/winsysmcp-win-arm64.exe
             publish/winsysmcp-win-x64.exe
           generate_release_notes: true
+
+      - name: Publish NuGet package
+        shell: pwsh
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: |
+          if (-not $env:NUGET_API_KEY) {
+            Write-Host "NUGET_API_KEY is not configured; skipping NuGet publish."
+            exit 0
+          }
+
+          dotnet nuget push artifacts/packages/*.nupkg --api-key $env:NUGET_API_KEY --source https://api.nuget.org/v3/index.json --skip-duplicate

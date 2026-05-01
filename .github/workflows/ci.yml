@@ -25,6 +25,15 @@ jobs:
       - name: Build
         run: dotnet build src/WinSysMcp --no-restore -c Debug
 
+      - name: Pack NuGet package
+        run: dotnet pack src/WinSysMcp --no-build -c Debug -o artifacts/packages /p:Version=0.0.0-ci.${{ github.run_number }}
+
+      - name: Upload NuGet package artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: winsysmcp-nuget-package
+          path: artifacts/packages/*.nupkg
+
 #      - name: Test
 #        run: dotnet test tests/WinSysMcp.Tests --no-build -c Debug --logger "trx;LogFileName=results.trx"
 
