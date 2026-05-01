@@ -19,6 +19,12 @@ Thank you for considering a contribution! Here's how to get started.
    dotnet test tests/WinSysMcp.Tests
    ```
 
+4. If you change packaging or release logic, verify the NuGet package still builds:
+
+   ```powershell
+   dotnet pack src/WinSysMcp -c Release /p:PublishAot=false
+   ```
+
 ## Adding a New Tool
 
 1. Find the appropriate `Tools/*.cs` file, or create a new one for a distinct group.

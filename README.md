@@ -47,6 +47,8 @@ Download the latest `winsysmcp.exe` from the [Releases](../../releases) page. No
 
 > **Note:** The AOT build omits three tool groups that depend on WMI reflection (`WmiTools`, `ReliabilityTools`, `PowerAndSecurityTools`). Use the JIT build if you need those tools.
 
+Each tagged release also includes a versioned `WinSysMcp.*.nupkg` NuGet package for package-based distribution.
+
 ### Option B — Run from source
 
 ```powershell
@@ -119,6 +121,12 @@ To target x64 instead, override the runtime identifier:
 
 ```powershell
 dotnet publish src/WinSysMcp -c Release -r win-x64
+```
+
+### Pack the NuGet package
+
+```powershell
+dotnet pack src/WinSysMcp -c Release /p:PublishAot=false
 ```
 
 ---
