@@ -5,7 +5,7 @@ using System.Management;
 namespace WinSysMcp.Tools;
 
 [McpServerToolType]
-public static class WmiTools
+public class WmiTools
 {
     [McpServerTool(Name = "get_bios_info")]
     [System.ComponentModel.Description("Retrieves BIOS information using WMI (Win32_BIOS).")]

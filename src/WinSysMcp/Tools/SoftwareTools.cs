@@ -5,7 +5,7 @@ using Microsoft.Win32;
 namespace WinSysMcp.Tools;
 
 [McpServerToolType]
-public static class SoftwareTools
+public class SoftwareTools
 {
     [McpServerTool(Name = "get_installed_programs")]
     public static List<InstalledProgramModel> GetInstalledPrograms(

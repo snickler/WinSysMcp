@@ -6,7 +6,7 @@ using System.Diagnostics;
 namespace WinSysMcp.Tools;
 
 [McpServerToolType]
-public static class SystemTools
+public class SystemTools
 {
     [McpServerTool(Name = "get_system_info")]
     public static string GetSystemInfo()

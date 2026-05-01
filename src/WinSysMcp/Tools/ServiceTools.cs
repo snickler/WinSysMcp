@@ -5,7 +5,7 @@ using System.ServiceProcess;
 namespace WinSysMcp.Tools;
 
 [McpServerToolType]
-public static class ServiceTools
+public class ServiceTools
 {
     [McpServerTool(Name = "list_services")]
     public static List<ServiceInfoModel> ListServices(

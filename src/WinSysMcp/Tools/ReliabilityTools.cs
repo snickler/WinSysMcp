@@ -5,7 +5,7 @@ using System.Management;
 namespace WinSysMcp.Tools;
 
 [McpServerToolType]
-public static class ReliabilityTools
+public class ReliabilityTools
 {
     [McpServerTool(Name = "get_reliability_records")]
     public static List<ReliabilityRecordModel> GetReliabilityRecords(

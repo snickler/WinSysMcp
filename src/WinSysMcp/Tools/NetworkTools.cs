@@ -6,7 +6,7 @@ using System.Net;
 namespace WinSysMcp.Tools;
 
 [McpServerToolType]
-public static class NetworkTools
+public class NetworkTools
 {
     [McpServerTool(Name = "get_network_interfaces")]
     public static List<NetworkInterfaceModel> GetNetworkInterfaces()
