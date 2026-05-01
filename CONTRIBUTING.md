@@ -46,5 +46,5 @@ Thank you for considering a contribution! Here's how to get started.
 - Keep PRs focused on a single change.
 - Update `docs/TOOLS.md` and `docs/TOOLS_SCHEMA.json` by running the generator before submitting.
 - Ensure `dotnet test` passes.
-- GitHub Actions CI runs the test suite on the standard Windows runner and validates the Native AOT publish matrix in parallel (`win-arm64` on `windows-11-arm`, `win-x64` on the standard Windows runner); tagged releases wait for both before publishing artifacts.
+- GitHub Actions CI runs matching test and Native AOT publish matrices in parallel (`win-arm64` on `windows-11-arm64`, `win-x64` on the standard Windows runner); tagged releases wait for both matrices before publishing artifacts.
 - Follow the existing code style (four-space indentation, nullable enabled, no suppressed warnings without justification).
