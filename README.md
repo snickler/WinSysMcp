@@ -126,7 +126,7 @@ dotnet publish src/WinSysMcp -c Release -r win-x64
 ### Pack the NuGet package
 
 ```powershell
-dotnet pack src/WinSysMcp
+dotnet pack src/WinSysMcp -c Release /p:PublishAot=false
 ```
 
 ---

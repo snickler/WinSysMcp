@@ -21,11 +21,14 @@
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
-    <PublishAot>true</PublishAot>
-    <RuntimeIdentifier>win-arm64</RuntimeIdentifier>
-    <InvariantGlobalization>true</InvariantGlobalization>
-    <IlcOptimizationPreference>Speed</IlcOptimizationPreference>
-    <StripSymbols>true</StripSymbols>
+    <PublishAot Condition="'$(PublishAot)' == ''">true</PublishAot>
+    <RuntimeIdentifier Condition="'$(PublishAot)' == 'true' and '$(RuntimeIdentifier)' == ''">win-arm64</RuntimeIdentifier>
+    <InvariantGlobalization Condition="'$(PublishAot)' == 'true'">true</InvariantGlobalization>
+    <IlcOptimizationPreference Condition="'$(PublishAot)' == 'true'">Speed</IlcOptimizationPreference>
+    <StripSymbols Condition="'$(PublishAot)' == 'true'">true</StripSymbols>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(PublishAot)' == 'true'">
     <DefineConstants>$(DefineConstants);AOT_SAFE</DefineConstants>
   </PropertyGroup>
 
@@ -46,7 +49,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <None Include="../../README.md" Pack="true" PackagePath="/" />
   </ItemGroup>
 
 </Project>
