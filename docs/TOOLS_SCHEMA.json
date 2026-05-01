@@ -1,0 +1,1848 @@
+{
+  "generatedAt": "2026-03-19T10:34:55.1271417Z",
+  "toolset": "WinSysMcp",
+  "tools": {
+    "get_drives": {
+      "source": "src/WinSysMcp/Tools/DiskTools.cs",
+      "description": "Returns information about logical drives (name, type, total size, free space, format and readiness). Useful for capacity checks and diagnostics. Read-only and safe to call. Example: no parameters.",
+      "parameters": null,
+      "jsonInputSchema": null
+    },
+    "get_folder_size": {
+      "source": "src/WinSysMcp/Tools/DiskTools.cs",
+      "description": "Calculates total size of a folder and its subfolders. Parameter: path (absolute). May be slow on large hierarchies and requires read permission \u2014 returns size in MB/GB or an error message. Example: path=\u0027C:\\Users\\Public\u0027. JSON input schema example: {\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022path\u0022:{\u0022type\u0022:\u0022string\u0022}}}",
+      "parameters": [
+        {
+          "name": "path",
+          "type": "string"
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    },
+    "get_event_logs": {
+      "source": "src/WinSysMcp/Tools/EventLogTools.cs",
+      "description": "Fetches recent entries from a Windows Event Log (e.g., Application, System). Parameters: logName (default \u0027Application\u0027), maxEvents (default 10), entryType (optional filter like \u0027Error\u0027/\u0027Warning\u0027/\u0027Information\u0027). Read-only; may require administrative privileges. Example: logName=\u0027System\u0027, maxEvents=20, entryType=\u0027Error\u0027. JSON input schema example: {\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022logName\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022maxEvents\u0022:{\u0022type\u0022:\u0022integer\u0022},\u0022entryType\u0022:{\u0022type\u0022:\u0022string\u0022}}}",
+      "parameters": [
+        {
+          "name": "logName",
+          "type": "string",
+          "optional": true,
+          "default": "Application"
+        },
+        {
+          "name": "maxEvents",
+          "type": "integer",
+          "optional": true,
+          "default": 10
+        },
+        {
+          "name": "entryType",
+          "type": "string",
+          "optional": true,
+          "default": null
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "logName": {
+            "type": "string",
+            "default": "Application"
+          },
+          "maxEvents": {
+            "type": "integer",
+            "default": 10
+          },
+          "entryType": {
+            "type": "string",
+            "default": null
+          }
+        }
+      }
+    },
+    "apply_diff": {
+      "source": "src/WinSysMcp/Tools/FileTools.cs",
+      "description": "Applies edits from a diff payload to a text file. Parameters: path (absolute), diff, encoding (optional override). Supports unified diff hunks (@@) and JSON operation arrays. Write access to protected system locations is blocked.",
+      "parameters": [
+        {
+          "name": "path",
+          "type": "string"
+        },
+        {
+          "name": "diff",
+          "type": "string"
+        },
+        {
+          "name": "encoding",
+          "type": "string",
+          "optional": true,
+          "default": null
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "diff": {
+            "type": "string"
+          },
+          "encoding": {
+            "type": "string",
+            "default": null
+          }
+        },
+        "required": [
+          "path",
+          "diff"
+        ]
+      }
+    },
+    "copy_file": {
+      "source": "src/WinSysMcp/Tools/FileTools.cs",
+      "description": "Copies a file from sourcePath to destPath. Parameters: sourcePath, destPath, overwrite (default false). Requires file system permissions; non-idempotent when overwrite=true. JSON input schema example: {\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022sourcePath\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022destPath\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022overwrite\u0022:{\u0022type\u0022:\u0022boolean\u0022}}}",
+      "parameters": [
+        {
+          "name": "sourcePath",
+          "type": "string"
+        },
+        {
+          "name": "destPath",
+          "type": "string"
+        },
+        {
+          "name": "overwrite",
+          "type": "boolean",
+          "optional": true,
+          "default": false
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "sourcePath": {
+            "type": "string"
+          },
+          "destPath": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "sourcePath",
+          "destPath"
+        ]
+      }
+    },
+    "create_directory": {
+      "source": "src/WinSysMcp/Tools/FileTools.cs",
+      "description": "Creates a directory and any missing parents. Parameter: path. Non-destructive if existing; requires write permission to the parent folder.",
+      "parameters": [
+        {
+          "name": "path",
+          "type": "string"
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    },
+    "delete_directory": {
+      "source": "src/WinSysMcp/Tools/FileTools.cs",
+      "description": "Deletes a directory. Parameters: path, recursive (default false). Destructive when recursive=true; use with caution and appropriate permissions. JSON input schema example: {\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022path\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022recursive\u0022:{\u0022type\u0022:\u0022boolean\u0022}}}",
+      "parameters": [
+        {
+          "name": "path",
+          "type": "string"
+        },
+        {
+          "name": "recursive",
+          "type": "boolean",
+          "optional": true,
+          "default": false
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "recursive": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    },
+    "delete_exact_chunk": {
+      "source": "src/WinSysMcp/Tools/FileTools.cs",
+      "description": "Deletes an exact text chunk from a file and fails if the number of matches is not exactly what you expect. Parameters: path (absolute), text, expectedOccurrences (default 1), encoding (optional override). Useful when a line-based edit created duplicates and you want a safe cleanup.",
+      "parameters": [
+        {
+          "name": "path",
+          "type": "string"
+        },
+        {
+          "name": "text",
+          "type": "string"
+        },
+        {
+          "name": "expectedOccurrences",
+          "type": "integer",
+          "optional": true,
+          "default": 1
+        },
+        {
+          "name": "encoding",
+          "type": "string",
+          "optional": true,
+          "default": null
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          },
+          "expectedOccurrences": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 1
+          },
+          "encoding": {
+            "type": "string",
+            "default": null
+          }
+        },
+        "required": [
+          "path",
+          "text"
+        ]
+      }
+    },
+    "delete_file": {
+      "source": "src/WinSysMcp/Tools/FileTools.cs",
+      "description": "Deletes a file at the given path. Parameter: path. Destructive operation \u2014 requires privileges. Returns a success or error message.",
+      "parameters": [
+        {
+          "name": "path",
+          "type": "string"
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    },
+    "delete_lines": {
+      "source": "src/WinSysMcp/Tools/FileTools.cs",
+      "description": "Deletes an inclusive line range in a text file. Parameters: path (absolute), startLine, endLine, encoding (optional override). Line numbers are 1-based and inclusive.",
+      "parameters": [
+        {
+          "name": "path",
+          "type": "string"
+        },
+        {
+          "name": "startLine",
+          "type": "integer"
+        },
+        {
+          "name": "endLine",
+          "type": "integer"
+        },
+        {
+          "name": "encoding",
+          "type": "string",
+          "optional": true,
+          "default": null
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "startLine": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "endLine": {
+            "type": "integer"
+          },
+          "encoding": {
+            "type": "string",
+            "default": null
+          }
+        },
+        "required": [
+          "path",
+          "startLine",
+          "endLine"
+        ]
+      }
+    },
+    "delete_lines_guarded": {
+      "source": "src/WinSysMcp/Tools/FileTools.cs",
+      "description": "Deletes an inclusive line range only when the current file content exactly matches the expected content for that range. Parameters: path (absolute), startLine, endLine, expectedContent, encoding (optional override). This is safer for cleanup of stale or duplicated edits because it refuses mismatched ranges.",
+      "parameters": [
+        {
+          "name": "path",
+          "type": "string"
+        },
+        {
+          "name": "startLine",
+          "type": "integer"
+        },
+        {
+          "name": "endLine",
+          "type": "integer"
+        },
+        {
+          "name": "expectedContent",
+          "type": "string"
+        },
+        {
+          "name": "encoding",
+          "type": "string",
+          "optional": true,
+          "default": null
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "startLine": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "endLine": {
+            "type": "integer"
+          },
+          "expectedContent": {
+            "type": "string"
+          },
+          "encoding": {
+            "type": "string",
+            "default": null
+          }
+        },
+        "required": [
+          "path",
+          "startLine",
+          "endLine",
+          "expectedContent"
+        ]
+      }
+    },
+    "get_file_hash": {
+      "source": "src/WinSysMcp/Tools/FileTools.cs",
+      "description": "Computes SHA256 hash of the file at path. Parameter: path. Read-only. Large files processed as streams \u2014 may be slow for very large files. JSON input schema example: {\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022path\u0022:{\u0022type\u0022:\u0022string\u0022}}}",
+      "parameters": [
+        {
+          "name": "path",
+          "type": "string"
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    },
+    "get_file_info": {
+      "source": "src/WinSysMcp/Tools/FileTools.cs",
+      "description": "Returns metadata for a file (size, last write time, path). Parameter: path (absolute). Read-only and non-modifying.",
+      "parameters": [
+        {
+          "name": "path",
+          "type": "string"
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    },
+    "get_temp_path": {
+      "source": "src/WinSysMcp/Tools/FileTools.cs",
+      "description": "Returns the current process\u0027s temporary directory path. Read-only diagnostic value; may be useful for creating temp files or debugging.",
+      "parameters": null,
+      "jsonInputSchema": null
+    },
+    "insert_at_line": {
+      "source": "src/WinSysMcp/Tools/FileTools.cs",
+      "description": "Inserts content at a line position in a text file. Parameters: path (absolute), lineNumber (1-based insertion point), content, encoding (optional override). lineNumber=1 prepends; values beyond end append.",
+      "parameters": [
+        {
+          "name": "path",
+          "type": "string"
+        },
+        {
+          "name": "lineNumber",
+          "type": "integer"
+        },
+        {
+          "name": "content",
+          "type": "string"
+        },
+        {
+          "name": "encoding",
+          "type": "string",
+          "optional": true,
+          "default": null
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "lineNumber": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "content": {
+            "type": "string"
+          },
+          "encoding": {
+            "type": "string",
+            "default": null
+          }
+        },
+        "required": [
+          "path",
+          "lineNumber",
+          "content"
+        ]
+      }
+    },
+    "insert_at_line_guarded": {
+      "source": "src/WinSysMcp/Tools/FileTools.cs",
+      "description": "Inserts content at a line position only when the surrounding line anchors match the current file. Parameters: path (absolute), lineNumber (1-based insertion point), content, expectedBeforeLine (optional), expectedAfterLine (optional), encoding (optional override). At least one expected anchor must be provided. This is safer for LLM-driven edits because it refuses insertions when nearby lines drift.",
+      "parameters": [
+        {
+          "name": "path",
+          "type": "string"
+        },
+        {
+          "name": "lineNumber",
+          "type": "integer"
+        },
+        {
+          "name": "content",
+          "type": "string"
+        },
+        {
+          "name": "expectedBeforeLine",
+          "type": "string",
+          "optional": true,
+          "default": null
+        },
+        {
+          "name": "expectedAfterLine",
+          "type": "string",
+          "optional": true,
+          "default": null
+        },
+        {
+          "name": "encoding",
+          "type": "string",
+          "optional": true,
+          "default": null
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "lineNumber": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "content": {
+            "type": "string"
+          },
+          "expectedBeforeLine": {
+            "type": "string",
+            "default": null
+          },
+          "expectedAfterLine": {
+            "type": "string",
+            "default": null
+          },
+          "encoding": {
+            "type": "string",
+            "default": null
+          }
+        },
+        "required": [
+          "path",
+          "lineNumber",
+          "content"
+        ]
+      }
+    },
+    "list_directory": {
+      "source": "src/WinSysMcp/Tools/FileTools.cs",
+      "description": "Lists files and subdirectories inside a directory. Parameters: path (absolute). Returns entries (name, type, size and timestamps). Read-only; access may be restricted by file permissions.",
+      "parameters": [
+        {
+          "name": "path",
+          "type": "string"
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    },
+    "move_file": {
+      "source": "src/WinSysMcp/Tools/FileTools.cs",
+      "description": "Moves a file from sourcePath to destPath. Parameters: sourcePath, destPath. Requires permissions; operation is destructive to original path and may fail across volumes.",
+      "parameters": [
+        {
+          "name": "sourcePath",
+          "type": "string"
+        },
+        {
+          "name": "destPath",
+          "type": "string"
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "sourcePath": {
+            "type": "string"
+          },
+          "destPath": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "sourcePath",
+          "destPath"
+        ]
+      }
+    },
+    "read_file_head": {
+      "source": "src/WinSysMcp/Tools/FileTools.cs",
+      "description": "Reads the first N lines of a text file. Parameters: path (absolute), lineCount (default 20), encoding (optional override). Read-only; returns early with a friendly error message if file missing.",
+      "parameters": [
+        {
+          "name": "path",
+          "type": "string"
+        },
+        {
+          "name": "lineCount",
+          "type": "integer",
+          "optional": true,
+          "default": 20
+        },
+        {
+          "name": "encoding",
+          "type": "string",
+          "optional": true,
+          "default": null
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "lineCount": {
+            "type": "integer",
+            "default": 20
+          },
+          "encoding": {
+            "type": "string",
+            "default": null
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    },
+    "read_file_lines": {
+      "source": "src/WinSysMcp/Tools/FileTools.cs",
+      "description": "Reads a range of lines from a text file. Parameters: path (absolute), startLine (1-based, default 1), endLine (inclusive, default -1 for end of file), encoding (optional override). Returns up to 10,000 lines. Read-only.",
+      "parameters": [
+        {
+          "name": "path",
+          "type": "string"
+        },
+        {
+          "name": "startLine",
+          "type": "integer",
+          "optional": true,
+          "default": 1
+        },
+        {
+          "name": "endLine",
+          "type": "integer",
+          "optional": true,
+          "default": -1
+        },
+        {
+          "name": "encoding",
+          "type": "string",
+          "optional": true,
+          "default": null
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "startLine": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 1
+          },
+          "endLine": {
+            "type": "integer",
+            "minimum": -1,
+            "default": -1
+          },
+          "encoding": {
+            "type": "string",
+            "default": null
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    },
+    "read_file_tail": {
+      "source": "src/WinSysMcp/Tools/FileTools.cs",
+      "description": "Reads the last N lines of a text file. Parameters: path (absolute), lineCount (default 20), encoding (optional override). Returns newest lines. Large files are handled but may be slow; this is read-only. JSON input schema example: {\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022path\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022lineCount\u0022:{\u0022type\u0022:\u0022integer\u0022},\u0022encoding\u0022:{\u0022type\u0022:\u0022string\u0022}}}",
+      "parameters": [
+        {
+          "name": "path",
+          "type": "string"
+        },
+        {
+          "name": "lineCount",
+          "type": "integer",
+          "optional": true,
+          "default": 20
+        },
+        {
+          "name": "encoding",
+          "type": "string",
+          "optional": true,
+          "default": null
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "lineCount": {
+            "type": "integer",
+            "default": 20
+          },
+          "encoding": {
+            "type": "string",
+            "default": null
+          }
+        },
+        "required": [
+          "path"
+        ]
+      }
+    },
+    "replace_exact_chunk": {
+      "source": "src/WinSysMcp/Tools/FileTools.cs",
+      "description": "Replaces an exact text chunk in a file and fails if the number of matches is not exactly what you expect. Parameters: path (absolute), oldText, newText, expectedOccurrences (default 1), encoding (optional override). Safer for LLM-driven edits than line-number edits because it avoids editing the wrong location when line numbers drift.",
+      "parameters": [
+        {
+          "name": "path",
+          "type": "string"
+        },
+        {
+          "name": "oldText",
+          "type": "string"
+        },
+        {
+          "name": "newText",
+          "type": "string"
+        },
+        {
+          "name": "expectedOccurrences",
+          "type": "integer",
+          "optional": true,
+          "default": 1
+        },
+        {
+          "name": "encoding",
+          "type": "string",
+          "optional": true,
+          "default": null
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "oldText": {
+            "type": "string"
+          },
+          "newText": {
+            "type": "string"
+          },
+          "expectedOccurrences": {
+            "type": "integer",
+            "minimum": 1,
+            "default": 1
+          },
+          "encoding": {
+            "type": "string",
+            "default": null
+          }
+        },
+        "required": [
+          "path",
+          "oldText",
+          "newText"
+        ]
+      }
+    },
+    "replace_lines": {
+      "source": "src/WinSysMcp/Tools/FileTools.cs",
+      "description": "Replaces an inclusive line range in a text file. Parameters: path (absolute), startLine, endLine, newContent, encoding (optional override). Line numbers are 1-based and inclusive.",
+      "parameters": [
+        {
+          "name": "path",
+          "type": "string"
+        },
+        {
+          "name": "startLine",
+          "type": "integer"
+        },
+        {
+          "name": "endLine",
+          "type": "integer"
+        },
+        {
+          "name": "newContent",
+          "type": "string"
+        },
+        {
+          "name": "encoding",
+          "type": "string",
+          "optional": true,
+          "default": null
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "startLine": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "endLine": {
+            "type": "integer"
+          },
+          "newContent": {
+            "type": "string"
+          },
+          "encoding": {
+            "type": "string",
+            "default": null
+          }
+        },
+        "required": [
+          "path",
+          "startLine",
+          "endLine",
+          "newContent"
+        ]
+      }
+    },
+    "replace_lines_guarded": {
+      "source": "src/WinSysMcp/Tools/FileTools.cs",
+      "description": "Replaces an inclusive line range only when the current file content exactly matches the expected content for that range. Parameters: path (absolute), startLine, endLine, expectedContent, newContent, encoding (optional override). This is safer for LLM-driven edits because it refuses stale or drifted line-number edits.",
+      "parameters": [
+        {
+          "name": "path",
+          "type": "string"
+        },
+        {
+          "name": "startLine",
+          "type": "integer"
+        },
+        {
+          "name": "endLine",
+          "type": "integer"
+        },
+        {
+          "name": "expectedContent",
+          "type": "string"
+        },
+        {
+          "name": "newContent",
+          "type": "string"
+        },
+        {
+          "name": "encoding",
+          "type": "string",
+          "optional": true,
+          "default": null
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "startLine": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "endLine": {
+            "type": "integer"
+          },
+          "expectedContent": {
+            "type": "string"
+          },
+          "newContent": {
+            "type": "string"
+          },
+          "encoding": {
+            "type": "string",
+            "default": null
+          }
+        },
+        "required": [
+          "path",
+          "startLine",
+          "endLine",
+          "expectedContent",
+          "newContent"
+        ]
+      }
+    },
+    "replace_text": {
+      "source": "src/WinSysMcp/Tools/FileTools.cs",
+      "description": "Replaces text in a file. Parameters: path (absolute), oldText, newText, replaceAll (default true), encoding (optional override). Returns replacement count. Write access to protected system locations is blocked.",
+      "parameters": [
+        {
+          "name": "path",
+          "type": "string"
+        },
+        {
+          "name": "oldText",
+          "type": "string"
+        },
+        {
+          "name": "newText",
+          "type": "string"
+        },
+        {
+          "name": "replaceAll",
+          "type": "boolean",
+          "optional": true,
+          "default": true
+        },
+        {
+          "name": "encoding",
+          "type": "string",
+          "optional": true,
+          "default": null
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "oldText": {
+            "type": "string"
+          },
+          "newText": {
+            "type": "string"
+          },
+          "replaceAll": {
+            "type": "boolean",
+            "default": true
+          },
+          "encoding": {
+            "type": "string",
+            "default": null
+          }
+        },
+        "required": [
+          "path",
+          "oldText",
+          "newText"
+        ]
+      }
+    },
+    "search_files": {
+      "source": "src/WinSysMcp/Tools/FileTools.cs",
+      "description": "Searches for files matching searchPattern (e.g. \u0027*.log\u0027) inside path. Parameters: path, searchPattern, recursive=false. Returns up to first 100 matches. Read-only.",
+      "parameters": [
+        {
+          "name": "path",
+          "type": "string"
+        },
+        {
+          "name": "searchPattern",
+          "type": "string"
+        },
+        {
+          "name": "recursive",
+          "type": "boolean",
+          "optional": true,
+          "default": false
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "searchPattern": {
+            "type": "string"
+          },
+          "recursive": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "path",
+          "searchPattern"
+        ]
+      }
+    },
+    "write_file": {
+      "source": "src/WinSysMcp/Tools/FileTools.cs",
+      "description": "Writes text content to a file. Parameters: path (absolute), content, overwrite (default true), encoding name or code page (for example utf-8, utf-8-bom, utf-16, utf-16be, windows-1252, shift_jis). Creates or overwrites the target file. Write access to protected system locations is blocked.",
+      "parameters": [
+        {
+          "name": "path",
+          "type": "string"
+        },
+        {
+          "name": "content",
+          "type": "string"
+        },
+        {
+          "name": "overwrite",
+          "type": "boolean",
+          "optional": true,
+          "default": true
+        },
+        {
+          "name": "encoding",
+          "type": "string",
+          "optional": true,
+          "default": "utf-8"
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "path": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "overwrite": {
+            "type": "boolean",
+            "default": true
+          },
+          "encoding": {
+            "type": "string",
+            "default": "utf-8"
+          }
+        },
+        "required": [
+          "path",
+          "content"
+        ]
+      }
+    },
+    "flush_dns": {
+      "source": "src/WinSysMcp/Tools/NetworkAdvancedTools.cs",
+      "description": "Flushes the DNS resolver cache via \u0027ipconfig /flushdns\u0027. This modifies system DNS cache state and may require permission; use when troubleshooting name resolution.",
+      "parameters": null,
+      "jsonInputSchema": null
+    },
+    "get_arp_table": {
+      "source": "src/WinSysMcp/Tools/NetworkAdvancedTools.cs",
+      "description": "Runs \u0027arp -a\u0027 and returns the system ARP table as text. Read-only and useful for local network diagnostics \u2014 may require command availability depending on OS.",
+      "parameters": null,
+      "jsonInputSchema": null
+    },
+    "get_dns_cache": {
+      "source": "src/WinSysMcp/Tools/NetworkAdvancedTools.cs",
+      "description": "Runs \u0027ipconfig /displaydns\u0027 to show the local DNS resolver cache. Read-only informational command \u2014 may be empty depending on system state.",
+      "parameters": null,
+      "jsonInputSchema": null
+    },
+    "get_firewall_rules": {
+      "source": "src/WinSysMcp/Tools/NetworkAdvancedTools.cs",
+      "description": "Fetches firewall rules using \u0027netsh advfirewall firewall show rule name=all\u0027. Parameter: ruleName (optional). Read-only but requires netsh availability and adequate privileges to see full details. Example: ruleName=\u0027all\u0027 or \u0027Allow HTTP\u0027. JSON input schema example: {\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022ruleName\u0022:{\u0022type\u0022:\u0022string\u0022}}}",
+      "parameters": [
+        {
+          "name": "ruleName",
+          "type": "string",
+          "optional": true,
+          "default": "all"
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "ruleName": {
+            "type": "string",
+            "default": "all"
+          }
+        }
+      }
+    },
+    "get_route_table": {
+      "source": "src/WinSysMcp/Tools/NetworkAdvancedTools.cs",
+      "description": "Executes \u0027route print\u0027 and returns the system routing table. Read-only \u2014 useful for routing and networking diagnostics.",
+      "parameters": null,
+      "jsonInputSchema": null
+    },
+    "check_port_open": {
+      "source": "src/WinSysMcp/Tools/NetworkTools.cs",
+      "description": "Attempts a TCP connection to the given host and port to determine if the port is open. Parameters: host, port. Uses a short timeout (2s). Non-destructive and safe to use for quick checks. Example: host=\u0027example.com\u0027, port=80. JSON input schema example: {\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022host\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022port\u0022:{\u0022type\u0022:\u0022integer\u0022}}}",
+      "parameters": [
+        {
+          "name": "host",
+          "type": "string"
+        },
+        {
+          "name": "port",
+          "type": "integer"
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "host": {
+            "type": "string"
+          },
+          "port": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "host",
+          "port"
+        ]
+      }
+    },
+    "dns_lookup": {
+      "source": "src/WinSysMcp/Tools/NetworkTools.cs",
+      "description": "Resolves a hostname to one or more IP addresses. Parameter: host. Uses system DNS resolver and may return IPv4/IPv6 addresses.",
+      "parameters": [
+        {
+          "name": "host",
+          "type": "string"
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "host": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "host"
+        ]
+      }
+    },
+    "download_file": {
+      "source": "src/WinSysMcp/Tools/NetworkTools.cs",
+      "description": "Downloads a file from a public URL and writes it to destPath. Parameters: url, destPath. Network I/O operation \u2014 ensure URL is trusted and dest path writable. Returns bytes downloaded or error message. Example: url=\u0027https://example.com/file.txt\u0027, destPath=\u0027C:\\temp\\file.txt\u0027. JSON input schema example: {\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022url\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022destPath\u0022:{\u0022type\u0022:\u0022string\u0022}}}",
+      "parameters": [
+        {
+          "name": "url",
+          "type": "string"
+        },
+        {
+          "name": "destPath",
+          "type": "string"
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string"
+          },
+          "destPath": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "url",
+          "destPath"
+        ]
+      }
+    },
+    "get_active_tcp_connections": {
+      "source": "src/WinSysMcp/Tools/NetworkTools.cs",
+      "description": "Lists active TCP connections (local/remote endpoints and state). Parameter: count (default 20) to limit output. Read-only; may require elevated privileges to see all connections.",
+      "parameters": [
+        {
+          "name": "count",
+          "type": "integer",
+          "optional": true,
+          "default": 20
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "default": 20
+          }
+        }
+      }
+    },
+    "get_network_interfaces": {
+      "source": "src/WinSysMcp/Tools/NetworkTools.cs",
+      "description": "Returns a list of network adapters with basic configuration. Includes IP addresses (IPv4), operational status, speed, type and DNS suffix. Read-only diagnostic information.",
+      "parameters": null,
+      "jsonInputSchema": null
+    },
+    "get_public_ip": {
+      "source": "src/WinSysMcp/Tools/NetworkTools.cs",
+      "description": "Queries a public IP service to return the server\u0027s public-facing IPv4 address. No parameters. Network call may fail if outbound HTTP blocked.",
+      "parameters": null,
+      "jsonInputSchema": null
+    },
+    "ping_host": {
+      "source": "src/WinSysMcp/Tools/NetworkTools.cs",
+      "description": "Sends an ICMP ping to a hostname or IP to check reachability and round-trip time. Parameter: host string. May be blocked by firewall or require permission. Example: host=\u0027github.com\u0027. JSON input schema example: {\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022host\u0022:{\u0022type\u0022:\u0022string\u0022}}}",
+      "parameters": [
+        {
+          "name": "host",
+          "type": "string"
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "host": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "host"
+        ]
+      }
+    },
+    "get_system_metrics": {
+      "source": "src/WinSysMcp/Tools/PerformanceTools.cs",
+      "description": "Returns real-time system metrics (CPU percentage, available memory MB, system up time seconds). No parameters. Uses Performance Counters which may require permissions and can take a short sample period; first measurement may be delayed briefly. Example: no parameters.",
+      "parameters": null,
+      "jsonInputSchema": null
+    },
+    "get_battery_status": {
+      "source": "src/WinSysMcp/Tools/PowerAndSecurityTools.cs",
+      "description": "Returns battery health and estimated charge remaining when present. No parameters. Read-only; may return \u0027No battery detected\u0027 on desktops.",
+      "parameters": null,
+      "jsonInputSchema": null
+    },
+    "get_process_details": {
+      "source": "src/WinSysMcp/Tools/ProcessTools.cs",
+      "description": "Returns detailed metadata for a process by PID: name, memory details, start time, module path when accessible. Parameter: processId. Read-only; may fail on protected processes. Example: processId=1234. JSON input schema example: {\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022processId\u0022:{\u0022type\u0022:\u0022integer\u0022}}}",
+      "parameters": [
+        {
+          "name": "processId",
+          "type": "integer"
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "processId": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "processId"
+        ]
+      }
+    },
+    "get_top_processes": {
+      "source": "src/WinSysMcp/Tools/ProcessTools.cs",
+      "description": "Returns the top N running processes sorted by memory (RSS). Parameter: count (default 10). Read-only; may skip system processes due to access restrictions. Example: count=5. JSON input schema example: {\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022count\u0022:{\u0022type\u0022:\u0022integer\u0022}}}",
+      "parameters": [
+        {
+          "name": "count",
+          "type": "integer",
+          "optional": true,
+          "default": 10
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "count": {
+            "type": "integer",
+            "default": 10
+          }
+        }
+      }
+    },
+    "kill_process": {
+      "source": "src/WinSysMcp/Tools/ProcessTools.cs",
+      "description": "Terminates a process by PID. Parameter: processId. Destructive and requires permissions; can fail for protected or system processes. Use cautiously. Example: processId=1234. JSON input schema example: {\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022processId\u0022:{\u0022type\u0022:\u0022integer\u0022}}}",
+      "parameters": [
+        {
+          "name": "processId",
+          "type": "integer"
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "processId": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "processId"
+        ]
+      }
+    },
+    "start_process": {
+      "source": "src/WinSysMcp/Tools/ProcessTools.cs",
+      "description": "Starts a new process with the given executable path and optional arguments. Parameters: fileName, arguments (optional). Use caution launching untrusted executables; process runs under server user account. Example: fileName=\u0027C:\\Program Files\\MyApp\\app.exe\u0027, arguments=\u0027--verbose\u0027. JSON input schema example: {\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022fileName\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022arguments\u0022:{\u0022type\u0022:\u0022string\u0022}}}",
+      "parameters": [
+        {
+          "name": "fileName",
+          "type": "string"
+        },
+        {
+          "name": "arguments",
+          "type": "string",
+          "optional": true,
+          "default": ""
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "fileName": {
+            "type": "string"
+          },
+          "arguments": {
+            "type": "string",
+            "default": ""
+          }
+        },
+        "required": [
+          "fileName"
+        ]
+      }
+    },
+    "delete_registry_value": {
+      "source": "src/WinSysMcp/Tools/RegistryTools.cs",
+      "description": "Deletes a registry value. Parameters: root, keyPath, valueName. Destructive \u2014 use with care and expect permission errors without elevation. Example: root=\u0027HKCU\u0027, keyPath=\u0027SOFTWARE\\MyApp\u0027, valueName=\u0027Setting\u0027. JSON input schema example: {\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022root\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022keyPath\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022valueName\u0022:{\u0022type\u0022:\u0022string\u0022}}}",
+      "parameters": [
+        {
+          "name": "root",
+          "type": "string"
+        },
+        {
+          "name": "keyPath",
+          "type": "string"
+        },
+        {
+          "name": "valueName",
+          "type": "string"
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "root": {
+            "type": "string"
+          },
+          "keyPath": {
+            "type": "string"
+          },
+          "valueName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "root",
+          "keyPath",
+          "valueName"
+        ]
+      }
+    },
+    "list_registry_keys": {
+      "source": "src/WinSysMcp/Tools/RegistryTools.cs",
+      "description": "Lists subkeys under a registry key. Parameters: root, keyPath. Read-only listing; will return helpful messages when keys are missing or inaccessible. Example: root=\u0027HKLM\u0027, keyPath=\u0027SOFTWARE\u0027. JSON input schema example: {\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022root\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022keyPath\u0022:{\u0022type\u0022:\u0022string\u0022}}}",
+      "parameters": [
+        {
+          "name": "root",
+          "type": "string"
+        },
+        {
+          "name": "keyPath",
+          "type": "string"
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "root": {
+            "type": "string"
+          },
+          "keyPath": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "root",
+          "keyPath"
+        ]
+      }
+    },
+    "read_registry_value": {
+      "source": "src/WinSysMcp/Tools/RegistryTools.cs",
+      "description": "Reads a value from the Windows Registry. Parameters: root (HKLM/HKCU/etc), keyPath, valueName. Read-only \u2014 returns the value or an explanatory error message. Example: root=\u0027HKLM\u0027, keyPath=\u0027SOFTWARE\\MyApp\u0027, valueName=\u0027InstallPath\u0027. JSON input schema example: {\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022root\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022keyPath\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022valueName\u0022:{\u0022type\u0022:\u0022string\u0022}}}",
+      "parameters": [
+        {
+          "name": "root",
+          "type": "string"
+        },
+        {
+          "name": "keyPath",
+          "type": "string"
+        },
+        {
+          "name": "valueName",
+          "type": "string"
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "root": {
+            "type": "string"
+          },
+          "keyPath": {
+            "type": "string"
+          },
+          "valueName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "root",
+          "keyPath",
+          "valueName"
+        ]
+      }
+    },
+    "write_registry_value": {
+      "source": "src/WinSysMcp/Tools/RegistryTools.cs",
+      "description": "Writes a value to the Windows Registry. Parameters: root, keyPath, valueName, valueData. Destructive operation \u2014 modifies system configuration and requires appropriate privileges. Use carefully. Example: root=\u0027HKLM\u0027, keyPath=\u0027SOFTWARE\\MyApp\u0027, valueName=\u0027Setting\u0027, valueData=\u00271\u0027. JSON input schema example: {\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022root\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022keyPath\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022valueName\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022valueData\u0022:{\u0022type\u0022:\u0022string\u0022}}}",
+      "parameters": [
+        {
+          "name": "root",
+          "type": "string"
+        },
+        {
+          "name": "keyPath",
+          "type": "string"
+        },
+        {
+          "name": "valueName",
+          "type": "string"
+        },
+        {
+          "name": "valueData",
+          "type": "string"
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "root": {
+            "type": "string"
+          },
+          "keyPath": {
+            "type": "string"
+          },
+          "valueName": {
+            "type": "string"
+          },
+          "valueData": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "root",
+          "keyPath",
+          "valueName",
+          "valueData"
+        ]
+      }
+    },
+    "get_reliability_records": {
+      "source": "src/WinSysMcp/Tools/ReliabilityTools.cs",
+      "description": "Retrieves Windows reliability records (Win32_ReliabilityRecords) such as crashes/failures. Parameter: maxEvents (default 10) to limit results. Requires WMI and often admin rights. Example: maxEvents=50. JSON input schema example: {\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022maxEvents\u0022:{\u0022type\u0022:\u0022integer\u0022}}}",
+      "parameters": [
+        {
+          "name": "maxEvents",
+          "type": "integer",
+          "optional": true,
+          "default": 10
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "maxEvents": {
+            "type": "integer",
+            "default": 10
+          }
+        }
+      }
+    },
+    "check_user_in_group": {
+      "source": "src/WinSysMcp/Tools/PowerAndSecurityTools.cs",
+      "description": "Checks whether a user account is a member of a specified local group. Parameters: username, groupName. Read-only; helpful for access troubleshooting. JSON input schema example: {\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022username\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022groupName\u0022:{\u0022type\u0022:\u0022string\u0022}}}",
+      "parameters": [
+        {
+          "name": "username",
+          "type": "string"
+        },
+        {
+          "name": "groupName",
+          "type": "string"
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string"
+          },
+          "groupName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "groupName"
+        ]
+      }
+    },
+    "get_current_user": {
+      "source": "src/WinSysMcp/Tools/PowerAndSecurityTools.cs",
+      "description": "Returns the identity (DOMAIN\\username) of the account running the MCP server process. Use for debugging and auditing; read-only.",
+      "parameters": null,
+      "jsonInputSchema": null
+    },
+    "list_local_groups": {
+      "source": "src/WinSysMcp/Tools/PowerAndSecurityTools.cs",
+      "description": "Enumerates local groups on this machine and returns group names. Read-only; useful for permission audits.",
+      "parameters": null,
+      "jsonInputSchema": null
+    },
+    "list_local_users": {
+      "source": "src/WinSysMcp/Tools/PowerAndSecurityTools.cs",
+      "description": "Enumerates local user accounts on this machine. Returns an array of usernames. May require privileges and can return limited data under restricted contexts.",
+      "parameters": null,
+      "jsonInputSchema": null
+    },
+    "get_service_details": {
+      "source": "src/WinSysMcp/Tools/ServiceTools.cs",
+      "description": "Returns detailed data for a Windows service, including start/capability flags. Parameter: serviceName. Read-only; may require elevation. Example: serviceName=\u0027wuauserv\u0027. JSON input schema example: {\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022serviceName\u0022:{\u0022type\u0022:\u0022string\u0022}}}",
+      "parameters": [
+        {
+          "name": "serviceName",
+          "type": "string"
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "serviceName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "serviceName"
+        ]
+      }
+    },
+    "list_services": {
+      "source": "src/WinSysMcp/Tools/ServiceTools.cs",
+      "description": "Lists Windows services with basic data (service name, display name, status, type). Optional filters: status (e.g., \u0027Running\u0027) and nameFilter (partial match). Read-only overview; may require elevated privileges for some details. JSON input schema example: {\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022status\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022nameFilter\u0022:{\u0022type\u0022:\u0022string\u0022}}}",
+      "parameters": [
+        {
+          "name": "status",
+          "type": "string",
+          "optional": true,
+          "default": null
+        },
+        {
+          "name": "nameFilter",
+          "type": "string",
+          "optional": true,
+          "default": null
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "default": null
+          },
+          "nameFilter": {
+            "type": "string",
+            "default": null
+          }
+        }
+      }
+    },
+    "start_service": {
+      "source": "src/WinSysMcp/Tools/ServiceTools.cs",
+      "description": "Attempts to start a Windows service. Parameter: serviceName. Requires privilege to start services and may fail if service is disabled/unavailable. Operation modifies system state. Example: serviceName=\u0027Spooler\u0027. JSON input schema example: {\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022serviceName\u0022:{\u0022type\u0022:\u0022string\u0022}}}",
+      "parameters": [
+        {
+          "name": "serviceName",
+          "type": "string"
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "serviceName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "serviceName"
+        ]
+      }
+    },
+    "stop_service": {
+      "source": "src/WinSysMcp/Tools/ServiceTools.cs",
+      "description": "Attempts to stop a running Windows service. Parameter: serviceName. Requires privilege and will fail if service cannot be stopped (e.g., protected services). Operation modifies system state. Example: serviceName=\u0027Spooler\u0027. JSON input schema example: {\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022serviceName\u0022:{\u0022type\u0022:\u0022string\u0022}}}",
+      "parameters": [
+        {
+          "name": "serviceName",
+          "type": "string"
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "serviceName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "serviceName"
+        ]
+      }
+    },
+    "get_installed_programs": {
+      "source": "src/WinSysMcp/Tools/SoftwareTools.cs",
+      "description": "Lists installed programs discovered in common registry locations used by Windows Add/Remove Programs. Parameter: nameFilter (optional, partial match). Returns metadata such as DisplayName, DisplayVersion and Publisher. Read-only; results depend on privileges and registry virtualization. Example: nameFilter=\u0027Visual Studio\u0027. JSON input schema example: {\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022nameFilter\u0022:{\u0022type\u0022:\u0022string\u0022}}}",
+      "parameters": [
+        {
+          "name": "nameFilter",
+          "type": "string",
+          "optional": true,
+          "default": null
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "nameFilter": {
+            "type": "string",
+            "default": null
+          }
+        }
+      }
+    },
+    "abort_shutdown": {
+      "source": "src/WinSysMcp/Tools/SystemTools.cs",
+      "description": "Attempts to cancel a pending shutdown or restart initiated by the OS shutdown command. Only affects a scheduled shutdown/restart that is currently pending and requires appropriate privileges.",
+      "parameters": null,
+      "jsonInputSchema": null
+    },
+    "echo_message": {
+      "source": "src/WinSysMcp/Tools/SystemTools.cs",
+      "description": "Echoes back the provided text. Use for connection and health checks. Parameter: message \u2014 string returned verbatim. Example: message=\u0027ping\u0027. JSON input schema example: {\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022message\u0022:{\u0022type\u0022:\u0022string\u0022}}}",
+      "parameters": [
+        {
+          "name": "message",
+          "type": "string"
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ]
+      }
+    },
+    "get_environment_variables": {
+      "source": "src/WinSysMcp/Tools/SystemTools.cs",
+      "description": "Returns all environment variables visible to the MCP process as a dictionary (key =\u003E value). WARNING: may contain sensitive values (API keys, secrets) \u2014 treat output carefully.",
+      "parameters": null,
+      "jsonInputSchema": null
+    },
+    "get_os_version": {
+      "source": "src/WinSysMcp/Tools/SystemTools.cs",
+      "description": "Reports detailed OS version information and whether the OS is 32-bit or 64-bit. Useful for troubleshooting and compatibility checks.",
+      "parameters": null,
+      "jsonInputSchema": null
+    },
+    "get_startup_apps": {
+      "source": "src/WinSysMcp/Tools/SystemTools.cs",
+      "description": "Lists applications configured to start automatically via common Registry Run keys (HKLM/HKCU). Returns name, command string and which hive (HKLM/HKCU). Read-only and safe.",
+      "parameters": null,
+      "jsonInputSchema": null
+    },
+    "get_system_info": {
+      "source": "src/WinSysMcp/Tools/SystemTools.cs",
+      "description": "Returns key read-only system diagnostics: OS description, machine name, .NET runtime version and architecture. Safe to call \u2014 useful for diagnostics. Example: no parameters.",
+      "parameters": null,
+      "jsonInputSchema": null
+    },
+    "get_uptime": {
+      "source": "src/WinSysMcp/Tools/SystemTools.cs",
+      "description": "Returns system uptime (time since last boot) as a human-readable string. Read-only diagnostic information.",
+      "parameters": null,
+      "jsonInputSchema": null
+    },
+    "lock_workstation": {
+      "source": "src/WinSysMcp/Tools/SystemTools.cs",
+      "description": "Locks the currently logged-in user session immediately. Requires interactive desktop; may not work from non-interactive services or remote sessions.",
+      "parameters": null,
+      "jsonInputSchema": null
+    },
+    "restart_computer": {
+      "source": "src/WinSysMcp/Tools/SystemTools.cs",
+      "description": "Schedules a system restart. Parameters: delay (seconds, default 30) and comment. Requires privileges; this will reboot the machine. Example: delay=30, comment=\u0027Patch install\u0027. JSON input schema example: {\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022delay\u0022:{\u0022type\u0022:\u0022integer\u0022},\u0022comment\u0022:{\u0022type\u0022:\u0022string\u0022}}}",
+      "parameters": [
+        {
+          "name": "delay",
+          "type": "integer",
+          "optional": true,
+          "default": 30
+        },
+        {
+          "name": "comment",
+          "type": "string",
+          "optional": true,
+          "default": "Restart initiated by MCP."
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "delay": {
+            "type": "integer",
+            "default": 30
+          },
+          "comment": {
+            "type": "string",
+            "default": "Restart initiated by MCP."
+          }
+        }
+      }
+    },
+    "shutdown_computer": {
+      "source": "src/WinSysMcp/Tools/SystemTools.cs",
+      "description": "Schedules a system shutdown. Parameters: delay (seconds, default 30) and comment. Requires privileges; operation is destructive. Example: delay=60, comment=\u0027Maintenance\u0027. JSON input schema example: {\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022delay\u0022:{\u0022type\u0022:\u0022integer\u0022},\u0022comment\u0022:{\u0022type\u0022:\u0022string\u0022}}}",
+      "parameters": [
+        {
+          "name": "delay",
+          "type": "integer",
+          "optional": true,
+          "default": 30
+        },
+        {
+          "name": "comment",
+          "type": "string",
+          "optional": true,
+          "default": "Shutdown initiated by MCP."
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "delay": {
+            "type": "integer",
+            "default": 30
+          },
+          "comment": {
+            "type": "string",
+            "default": "Shutdown initiated by MCP."
+          }
+        }
+      }
+    },
+    "get_scheduled_tasks": {
+      "source": "src/WinSysMcp/Tools/TaskSchedulerTools.cs",
+      "description": "Retrieves scheduled tasks via \u0027schtasks /query\u0027. Parameter: format (TABLE|LIST|CSV, default CSV). Output is raw command text; permissions and scheduler service state affect results. Example: format=\u0027CSV\u0027. JSON input schema example: {\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022format\u0022:{\u0022type\u0022:\u0022string\u0022}}}",
+      "parameters": [
+        {
+          "name": "format",
+          "type": "string",
+          "optional": true,
+          "default": "CSV"
+        }
+      ],
+      "jsonInputSchema": {
+        "type": "object",
+        "properties": {
+          "format": {
+            "type": "string",
+            "default": "CSV"
+          }
+        }
+      }
+    },
+    "get_bios_info": {
+      "source": "src/WinSysMcp/Tools/WmiTools.cs",
+      "description": "Retrieves BIOS/firmware information via WMI (Win32_BIOS). Returns manufacturer, name, serial and version where available. Read-only and may require WMI availability.",
+      "parameters": null,
+      "jsonInputSchema": null
+    },
+    "get_printer_info": {
+      "source": "src/WinSysMcp/Tools/WmiTools.cs",
+      "description": "Lists installed printers using WMI (Win32_Printer). Returns driver, port and status where available. Read-only; information depends on WMI access.",
+      "parameters": null,
+      "jsonInputSchema": null
+    },
+    "get_processor_info": {
+      "source": "src/WinSysMcp/Tools/WmiTools.cs",
+      "description": "Retrieves CPU/processor information via WMI (Win32_Processor) \u2014 e.g. name, manufacturer, cores and logical processors. Read-only diagnostic info.",
+      "parameters": null,
+      "jsonInputSchema": null
+    },
+    "get_sound_devices": {
+      "source": "src/WinSysMcp/Tools/WmiTools.cs",
+      "description": "Enumerates sound devices via WMI (Win32_SoundDevice). Helpful for diagnosing audio hardware; read-only.",
+      "parameters": null,
+      "jsonInputSchema": null
+    },
+    "get_startup_commands": {
+      "source": "src/WinSysMcp/Tools/WmiTools.cs",
+      "description": "Retrieves startup commands using WMI (Win32_StartupCommand). Returns name, command, location and user context. Read-only and may include duplicates from other startup sources.",
+      "parameters": null,
+      "jsonInputSchema": null
+    },
+    "get_video_controllers": {
+      "source": "src/WinSysMcp/Tools/WmiTools.cs",
+      "description": "Returns video controller (GPU) info via WMI (Win32_VideoController) including name, memory and driver version when available. Read-only diagnostics.",
+      "parameters": null,
+      "jsonInputSchema": null
+    }
+  }
+}
