@@ -25,8 +25,11 @@ jobs:
       - name: Build
         run: dotnet build src/WinSysMcp --no-restore -c Debug
 
+      - name: Build Release package configuration
+        run: dotnet build src/WinSysMcp -c Release /p:PublishAot=false
+
       - name: Pack NuGet package
-        run: dotnet pack src/WinSysMcp -c Release -o artifacts/packages /p:PublishAot=false /p:Version=0.0.0-ci.${{ github.run_number }}
+        run: dotnet pack src/WinSysMcp --no-build -c Release -o artifacts/packages /p:PublishAot=false /p:Version=0.0.0-ci.${{ github.run_number }}
 
       - name: Upload NuGet package artifact
         uses: actions/upload-artifact@v4

@@ -20,6 +20,7 @@
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
   </PropertyGroup>
 
+  <!-- Release defaults to Native AOT for publish output; NuGet packaging overrides PublishAot=false to keep the full JIT tool set. -->
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <PublishAot Condition="'$(PublishAot)' == ''">true</PublishAot>
     <RuntimeIdentifier Condition="'$(PublishAot)' == 'true' and '$(RuntimeIdentifier)' == ''">win-arm64</RuntimeIdentifier>
