@@ -5,9 +5,9 @@ using System.Management;
 namespace WinSysMcp.Tools;
 
 [McpServerToolType]
-public static class ReliabilityTools
+public class ReliabilityTools
 {
-    [McpServerTool(Name = "get_reliability_records")]
+    [McpServerTool(Name = "get_reliability_records"), Description("Retrieves Windows reliability records (Win32_ReliabilityRecords) such as crashes/failures. Parameter: maxEvents (default 10) to limit results. Requires WMI and often admin rights. Example: maxEvents=50. JSON input schema example: {\"type\":\"object\",\"properties\":{\"maxEvents\":{\"type\":\"integer\"}}}")]
     public static List<ReliabilityRecordModel> GetReliabilityRecords(
         [System.ComponentModel.DescriptionAttribute("The maximum number of records to return. Default is 10.")] int maxEvents = 10)
     {
@@ -15,6 +15,8 @@ public static class ReliabilityTools
 
         try
         {
+            if (maxEvents <= 0) maxEvents = 10;
+            if (maxEvents > 500) maxEvents = 500; // cap large queries
             var scope = new ManagementScope("\\\\.\\root\\cimv2");
             scope.Connect();
 

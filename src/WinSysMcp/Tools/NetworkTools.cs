@@ -6,9 +6,9 @@ using System.Net;
 namespace WinSysMcp.Tools;
 
 [McpServerToolType]
-public static class NetworkTools
+public class NetworkTools
 {
-    [McpServerTool(Name = "get_network_interfaces")]
+    [McpServerTool(Name = "get_network_interfaces"), Description("Returns a list of network adapters with basic configuration. Includes IP addresses (IPv4), operational status, speed, type and DNS suffix. Read-only diagnostic information.")]
     public static List<NetworkInterfaceModel> GetNetworkInterfaces()
     {
         var results = new List<NetworkInterfaceModel>();
@@ -38,7 +38,7 @@ public static class NetworkTools
         return results;
     }
 
-    [McpServerTool(Name = "get_active_tcp_connections")]
+    [McpServerTool(Name = "get_active_tcp_connections"), Description("Lists active TCP connections (local/remote endpoints and state). Parameter: count (default 20) to limit output. Read-only; may require elevated privileges to see all connections.")]
     public static List<TcpConnectionModel> GetActiveTcpConnections(
         [System.ComponentModel.DescriptionAttribute("Max number of connections to return. Default 20.")] int count = 20)
     {
@@ -58,12 +58,13 @@ public static class NetworkTools
             .ToList();
     }
 
-    [McpServerTool(Name = "ping_host")]
+    [McpServerTool(Name = "ping_host"), Description("Sends an ICMP ping to a hostname or IP to check reachability and round-trip time. Parameter: host string. May be blocked by firewall or require permission. Example: host='github.com'. JSON input schema example: {\"type\":\"object\",\"properties\":{\"host\":{\"type\":\"string\"}}}")]
     public static string PingHost(
         [System.ComponentModel.DescriptionAttribute("The hostname or IP address to ping.")] string host)
     {
         try
         {
+            if (string.IsNullOrWhiteSpace(host)) return "Error: host parameter is required.";
             using var ping = new Ping();
             var reply = ping.Send(host);
             if (reply.Status == IPStatus.Success)
@@ -78,7 +79,7 @@ public static class NetworkTools
         }
     }
 
-    [McpServerTool(Name = "dns_lookup")]
+    [McpServerTool(Name = "dns_lookup"), Description("Resolves a hostname to one or more IP addresses. Parameter: host. Uses system DNS resolver and may return IPv4/IPv6 addresses.")]
     public static string DnsLookup(
         [System.ComponentModel.DescriptionAttribute("The hostname to resolve.")] string host)
     {
@@ -94,13 +95,15 @@ public static class NetworkTools
         }
     }
 
-    [McpServerTool(Name = "check_port_open")]
+    [McpServerTool(Name = "check_port_open"), Description("Attempts a TCP connection to the given host and port to determine if the port is open. Parameters: host, port. Uses a short timeout (2s). Non-destructive and safe to use for quick checks. Example: host='example.com', port=80. JSON input schema example: {\"type\":\"object\",\"properties\":{\"host\":{\"type\":\"string\"},\"port\":{\"type\":\"integer\"}}}")]
     public static string CheckPortOpen(
         [System.ComponentModel.DescriptionAttribute("The hostname or IP.")] string host,
         [System.ComponentModel.DescriptionAttribute("The port number.")] int port)
     {
         try
         {
+            if (string.IsNullOrWhiteSpace(host)) return "Error: host parameter is required.";
+            if (port < 1 || port > 65535) return "Error: port must be between 1 and 65535.";
             using var client = new System.Net.Sockets.TcpClient();
             var result = client.BeginConnect(host, port, null, null);
             var success = result.AsyncWaitHandle.WaitOne(TimeSpan.FromSeconds(2));
@@ -114,13 +117,16 @@ public static class NetworkTools
         }
     }
 
-    [McpServerTool(Name = "download_file")]
+    [McpServerTool(Name = "download_file"), Description("Downloads a file from a public URL and writes it to destPath. Parameters: url, destPath. Network I/O operation — ensure URL is trusted and dest path writable. Returns bytes downloaded or error message. Example: url='https://example.com/file.txt', destPath='C:\\temp\\file.txt'. JSON input schema example: {\"type\":\"object\",\"properties\":{\"url\":{\"type\":\"string\"},\"destPath\":{\"type\":\"string\"}}}")]
     public static string DownloadFile(
         [System.ComponentModel.DescriptionAttribute("The URL to download.")] string url,
         [System.ComponentModel.DescriptionAttribute("The local destination path.")] string destPath)
     {
         try
         {
+            if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(destPath)) return "Error: url and destPath are required.";
+            if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)) return "Error: url must be a valid absolute HTTP/HTTPS URL.";
+            if (!Path.IsPathRooted(destPath)) return "Error: destPath must be an absolute path.";
             using var client = new HttpClient();
             var bytes = client.GetByteArrayAsync(url).Result;
             File.WriteAllBytes(destPath, bytes);
@@ -132,7 +138,7 @@ public static class NetworkTools
         }
     }
 
-    [McpServerTool(Name = "get_public_ip")]
+    [McpServerTool(Name = "get_public_ip"), Description("Queries a public IP service to return the server's public-facing IPv4 address. No parameters. Network call may fail if outbound HTTP blocked.")]
     public static string GetPublicIp()
     {
         try

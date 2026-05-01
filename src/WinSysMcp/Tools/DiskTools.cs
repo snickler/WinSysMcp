@@ -4,9 +4,9 @@ using System.ComponentModel;
 namespace WinSysMcp.Tools;
 
 [McpServerToolType]
-public static class DiskTools
+public class DiskTools
 {
-    [McpServerTool(Name = "get_drives")]
+    [McpServerTool(Name = "get_drives"), Description("Returns information about logical drives (name, type, total size, free space, format and readiness). Useful for capacity checks and diagnostics. Read-only and safe to call. Example: no parameters.")]
     public static List<DriveInfoModel> GetDrives()
     {
         var results = new List<DriveInfoModel>();
@@ -53,12 +53,14 @@ public static class DiskTools
         return results;
     }
 
-    [McpServerTool(Name = "get_folder_size")]
+    [McpServerTool(Name = "get_folder_size"), Description("Calculates total size of a folder and its subfolders. Parameter: path (absolute). May be slow on large hierarchies and requires read permission — returns size in MB/GB or an error message. Example: path='C:\\Users\\Public'. JSON input schema example: {\"type\":\"object\",\"properties\":{\"path\":{\"type\":\"string\"}}}")]
     public static string GetFolderSize(
         [System.ComponentModel.DescriptionAttribute("The absolute path of the folder.")] string path)
     {
         try
         {
+            if (string.IsNullOrWhiteSpace(path)) return $"Error: path required.";
+            if (!Path.IsPathRooted(path)) return $"Error: path must be absolute.";
             if (!Directory.Exists(path))
             {
                 return $"Directory '{path}' not found.";

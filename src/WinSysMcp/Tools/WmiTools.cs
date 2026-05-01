@@ -5,10 +5,9 @@ using System.Management;
 namespace WinSysMcp.Tools;
 
 [McpServerToolType]
-public static class WmiTools
+public class WmiTools
 {
-    [McpServerTool(Name = "get_bios_info")]
-    [System.ComponentModel.Description("Retrieves BIOS information using WMI (Win32_BIOS).")]
+    [McpServerTool(Name = "get_bios_info"), Description("Retrieves BIOS/firmware information via WMI (Win32_BIOS). Returns manufacturer, name, serial and version where available. Read-only and may require WMI availability.")]
     public static object GetBiosInfo()
     {
         try
@@ -35,8 +34,7 @@ public static class WmiTools
         }
     }
 
-    [McpServerTool(Name = "get_processor_info")]
-    [System.ComponentModel.Description("Retrieves Processor information using WMI (Win32_Processor).")]
+    [McpServerTool(Name = "get_processor_info"), Description("Retrieves CPU/processor information via WMI (Win32_Processor) — e.g. name, manufacturer, cores and logical processors. Read-only diagnostic info.")]
     public static List<object> GetProcessorInfo()
     {
         var results = new List<object>();
@@ -65,8 +63,7 @@ public static class WmiTools
         return results;
     }
 
-    [McpServerTool(Name = "get_printer_info")]
-    [System.ComponentModel.Description("Retrieves installed printers using WMI (Win32_Printer).")]
+    [McpServerTool(Name = "get_printer_info"), Description("Lists installed printers using WMI (Win32_Printer). Returns driver, port and status where available. Read-only; information depends on WMI access.")]
     public static List<object> GetPrinterInfo()
     {
         var results = new List<object>();
@@ -99,8 +96,7 @@ public static class WmiTools
         return results;
     }
 
-    [McpServerTool(Name = "get_sound_devices")]
-    [System.ComponentModel.Description("Retrieves sound devices using WMI (Win32_SoundDevice).")]
+    [McpServerTool(Name = "get_sound_devices"), Description("Enumerates sound devices via WMI (Win32_SoundDevice). Helpful for diagnosing audio hardware; read-only.")]
     public static List<object> GetSoundDevices()
     {
         var results = new List<object>();
@@ -127,8 +123,7 @@ public static class WmiTools
         return results;
     }
 
-    [McpServerTool(Name = "get_video_controllers")]
-    [System.ComponentModel.Description("Retrieves video controller (GPU) information using WMI (Win32_VideoController).")]
+    [McpServerTool(Name = "get_video_controllers"), Description("Returns video controller (GPU) info via WMI (Win32_VideoController) including name, memory and driver version when available. Read-only diagnostics.")]
     public static List<object> GetVideoControllers()
     {
         var results = new List<object>();
@@ -157,8 +152,7 @@ public static class WmiTools
         return results;
     }
 
-    [McpServerTool(Name = "get_startup_commands")]
-    [System.ComponentModel.Description("Retrieves startup commands using WMI (Win32_StartupCommand).")]
+    [McpServerTool(Name = "get_startup_commands"), Description("Retrieves startup commands using WMI (Win32_StartupCommand). Returns name, command, location and user context. Read-only and may include duplicates from other startup sources.")]
     public static List<object> GetStartupCommands()
     {
         var results = new List<object>();

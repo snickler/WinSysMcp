@@ -7,9 +7,9 @@ using System.DirectoryServices.AccountManagement;
 namespace WinSysMcp.Tools;
 
 [McpServerToolType]
-public static class PowerTools
+public class PowerTools
 {
-    [McpServerTool(Name = "get_battery_status")]
+    [McpServerTool(Name = "get_battery_status"), Description("Returns battery health and estimated charge remaining when present. No parameters. Read-only; may return 'No battery detected' on desktops.")]
     public static string GetBatteryStatus()
     {
         try
@@ -35,15 +35,15 @@ public static class PowerTools
 }
 
 [McpServerToolType]
-public static class SecurityTools
+public class SecurityTools
 {
-    [McpServerTool(Name = "get_current_user")]
+    [McpServerTool(Name = "get_current_user"), Description("Returns the identity (DOMAIN\\username) of the account running the MCP server process. Use for debugging and auditing; read-only.")]
     public static string GetCurrentUser()
     {
         return WindowsIdentity.GetCurrent().Name;
     }
 
-    [McpServerTool(Name = "list_local_users")]
+    [McpServerTool(Name = "list_local_users"), Description("Enumerates local user accounts on this machine. Returns an array of usernames. May require privileges and can return limited data under restricted contexts.")]
     public static List<string> ListLocalUsers()
     {
         var users = new List<string>();
@@ -63,7 +63,7 @@ public static class SecurityTools
         return users;
     }
 
-    [McpServerTool(Name = "list_local_groups")]
+    [McpServerTool(Name = "list_local_groups"), Description("Enumerates local groups on this machine and returns group names. Read-only; useful for permission audits.")]
     public static List<string> ListLocalGroups()
     {
         var groups = new List<string>();
@@ -83,7 +83,7 @@ public static class SecurityTools
         return groups;
     }
 
-    [McpServerTool(Name = "check_user_in_group")]
+    [McpServerTool(Name = "check_user_in_group"), Description("Checks whether a user account is a member of a specified local group. Parameters: username, groupName. Read-only; helpful for access troubleshooting. JSON input schema example: {\"type\":\"object\",\"properties\":{\"username\":{\"type\":\"string\"},\"groupName\":{\"type\":\"string\"}}}")]
     public static string CheckUserInGroup(
         [System.ComponentModel.DescriptionAttribute("The username.")] string username,
         [System.ComponentModel.DescriptionAttribute("The group name.")] string groupName)
