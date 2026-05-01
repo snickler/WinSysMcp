@@ -5,6 +5,17 @@
     <TargetFramework>net10.0-windows</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
+    <EnableAotAnalyzer>true</EnableAotAnalyzer>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <PublishAot>true</PublishAot>
+    <RuntimeIdentifier>win-arm64</RuntimeIdentifier>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <IlcOptimizationPreference>Speed</IlcOptimizationPreference>
+    <StripSymbols>true</StripSymbols>
+    <DefineConstants>$(DefineConstants);AOT_SAFE</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -12,9 +23,15 @@
     <PackageReference Include="ModelContextProtocol" Version="0.4.0-*" />
     <PackageReference Include="System.Diagnostics.EventLog" Version="10.0.0" />
     <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="10.0.0" />
-    <PackageReference Include="System.DirectoryServices.AccountManagement" Version="10.0.0" />
-    <PackageReference Include="System.Management" Version="10.0.0" />
+    <PackageReference Include="System.DirectoryServices.AccountManagement" Version="10.0.0" Condition="'$(PublishAot)' != 'true'" />
+    <PackageReference Include="System.Management" Version="10.0.0" Condition="'$(PublishAot)' != 'true'" />
     <PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.0" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(PublishAot)' == 'true'">
+    <Compile Remove="Tools\WmiTools.cs" />
+    <Compile Remove="Tools\ReliabilityTools.cs" />
+    <Compile Remove="Tools\PowerAndSecurityTools.cs" />
   </ItemGroup>
 
 </Project>
