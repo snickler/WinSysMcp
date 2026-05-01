@@ -7,7 +7,7 @@ using System.DirectoryServices.AccountManagement;
 namespace WinSysMcp.Tools;
 
 [McpServerToolType]
-public static class PowerTools
+public class PowerTools
 {
     [McpServerTool(Name = "get_battery_status")]
     public static string GetBatteryStatus()
@@ -35,7 +35,7 @@ public static class PowerTools
 }
 
 [McpServerToolType]
-public static class SecurityTools
+public class SecurityTools
 {
     [McpServerTool(Name = "get_current_user")]
     public static string GetCurrentUser()

@@ -5,7 +5,7 @@ using System.Diagnostics;
 namespace WinSysMcp.Tools;
 
 [McpServerToolType]
-public static class TaskSchedulerTools
+public class TaskSchedulerTools
 {
     private static string RunCommand(string command, string arguments)
     {

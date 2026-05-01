@@ -5,7 +5,7 @@ using Microsoft.Win32;
 namespace WinSysMcp.Tools;
 
 [McpServerToolType]
-public static class RegistryTools
+public class RegistryTools
 {
     [McpServerTool(Name = "read_registry_value")]
     public static string ReadRegistryValue(

@@ -5,7 +5,7 @@ using System.Diagnostics;
 namespace WinSysMcp.Tools;
 
 [McpServerToolType]
-public static class ProcessTools
+public class ProcessTools
 {
     [McpServerTool(Name = "get_top_processes")]
     public static List<ProcessInfoModel> GetTopProcesses(

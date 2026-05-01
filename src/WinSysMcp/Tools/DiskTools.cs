@@ -4,7 +4,7 @@ using System.ComponentModel;
 namespace WinSysMcp.Tools;
 
 [McpServerToolType]
-public static class DiskTools
+public class DiskTools
 {
     [McpServerTool(Name = "get_drives")]
     public static List<DriveInfoModel> GetDrives()

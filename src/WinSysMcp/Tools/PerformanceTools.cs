@@ -5,7 +5,7 @@ using System.Diagnostics;
 namespace WinSysMcp.Tools;
 
 [McpServerToolType]
-public static class PerformanceTools
+public class PerformanceTools
 {
     [McpServerTool(Name = "get_system_metrics")]
     public static SystemMetricsModel GetSystemMetrics()

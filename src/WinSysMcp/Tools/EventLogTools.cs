@@ -5,7 +5,7 @@ using System.Diagnostics;
 namespace WinSysMcp.Tools;
 
 [McpServerToolType]
-public static class EventLogTools
+public class EventLogTools
 {
     [McpServerTool(Name = "get_event_logs")]
     public static List<EventLogEntryModel> GetEventLogs(
