@@ -60,7 +60,7 @@ jobs:
           NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
         run: |
           if (-not $env:NUGET_API_KEY) {
-            Write-Host "NUGET_API_KEY is not configured; skipping NuGet publish."
+            Write-Warning "NUGET_API_KEY is not configured; skipping NuGet publish."
             exit 0
           }
 
