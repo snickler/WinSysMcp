@@ -9,6 +9,28 @@ permissions:
   contents: read
 
 jobs:
+  test:
+    name: Run Tests
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+
+      - name: Test
+        run: dotnet test tests/WinSysMcp.Tests --logger "trx;LogFileName=results.trx"
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: '**/TestResults/*.trx'
+
   build:
     name: Build Release (${{ matrix.runtime }})
     runs-on: ${{ matrix.runner }}
@@ -46,7 +68,9 @@ jobs:
   release:
     name: Create GitHub Release
     runs-on: windows-latest
-    needs: build
+    needs:
+      - test
+      - build
     permissions:
       contents: write
 

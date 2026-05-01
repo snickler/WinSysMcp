@@ -129,7 +129,7 @@ dotnet publish src/WinSysMcp -c Release -r win-x64
 dotnet test tests/WinSysMcp.Tests
 ```
 
-GitHub Actions CI/CD now focuses on the Native AOT release builds: `win-arm64` publishes run on `windows-11-arm`, `win-x64` publishes run on the standard Windows runner, and both variants build in parallel for CI and tagged releases.
+GitHub Actions CI/CD now runs the test suite on the standard Windows runner and builds the Native AOT release variants in parallel: `win-arm64` publishes run on `windows-11-arm`, `win-x64` publishes run on the standard Windows runner, and tagged releases wait for both the tests and AOT artifacts before publishing.
 
 ---
 
