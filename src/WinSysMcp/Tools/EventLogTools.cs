@@ -7,7 +7,7 @@ namespace WinSysMcp.Tools;
 [McpServerToolType]
 public class EventLogTools
 {
-    [McpServerTool(Name = "get_event_logs")]
+    [McpServerTool(Name = "get_event_logs"), Description("Fetches recent entries from a Windows Event Log (e.g., Application, System). Parameters: logName (default 'Application'), maxEvents (default 10), entryType (optional filter like 'Error'/'Warning'/'Information'). Read-only; may require administrative privileges. Example: logName='System', maxEvents=20, entryType='Error'. JSON input schema example: {\"type\":\"object\",\"properties\":{\"logName\":{\"type\":\"string\"},\"maxEvents\":{\"type\":\"integer\"},\"entryType\":{\"type\":\"string\"}}}")]
     public static List<EventLogEntryModel> GetEventLogs(
         [System.ComponentModel.DescriptionAttribute("The name of the log to query (e.g., 'Application', 'System'). Default is 'Application'.")] string logName = "Application",
         [System.ComponentModel.DescriptionAttribute("The maximum number of events to return. Default is 10.")] int maxEvents = 10,
@@ -17,6 +17,9 @@ public class EventLogTools
 
         try
         {
+            if (string.IsNullOrWhiteSpace(logName)) return results; // return empty list for invalid log name
+            if (maxEvents <= 0) maxEvents = 10;
+            if (maxEvents > 1000) maxEvents = 1000; // cap to reasonable number
             if (!EventLog.Exists(logName))
             {
                 throw new ArgumentException($"Event log '{logName}' does not exist.");

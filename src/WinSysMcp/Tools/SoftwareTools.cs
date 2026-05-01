@@ -7,7 +7,7 @@ namespace WinSysMcp.Tools;
 [McpServerToolType]
 public class SoftwareTools
 {
-    [McpServerTool(Name = "get_installed_programs")]
+    [McpServerTool(Name = "get_installed_programs"), Description("Lists installed programs discovered in common registry locations used by Windows Add/Remove Programs. Parameter: nameFilter (optional, partial match). Returns metadata such as DisplayName, DisplayVersion and Publisher. Read-only; results depend on privileges and registry virtualization. Example: nameFilter='Visual Studio'. JSON input schema example: {\"type\":\"object\",\"properties\":{\"nameFilter\":{\"type\":\"string\"}}}")]
     public static List<InstalledProgramModel> GetInstalledPrograms(
         [System.ComponentModel.DescriptionAttribute("Filter by program name (partial match). Optional.")] string? nameFilter = null)
     {

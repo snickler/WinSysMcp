@@ -7,7 +7,7 @@ namespace WinSysMcp.Tools;
 [McpServerToolType]
 public class ServiceTools
 {
-    [McpServerTool(Name = "list_services")]
+    [McpServerTool(Name = "list_services"), Description("Lists Windows services with basic data (service name, display name, status, type). Optional filters: status (e.g., 'Running') and nameFilter (partial match). Read-only overview; may require elevated privileges for some details. JSON input schema example: {\"type\":\"object\",\"properties\":{\"status\":{\"type\":\"string\"},\"nameFilter\":{\"type\":\"string\"}}}")]
     public static List<ServiceInfoModel> ListServices(
         [System.ComponentModel.DescriptionAttribute("Filter by status (e.g., 'Running', 'Stopped'). Optional.")] string? status = null,
         [System.ComponentModel.DescriptionAttribute("Filter by service name (partial match). Optional.")] string? nameFilter = null)
@@ -48,12 +48,13 @@ public class ServiceTools
         return results.OrderBy(s => s.ServiceName).ToList();
     }
 
-    [McpServerTool(Name = "get_service_details")]
+    [McpServerTool(Name = "get_service_details"), Description("Returns detailed data for a Windows service, including start/capability flags. Parameter: serviceName. Read-only; may require elevation. Example: serviceName='wuauserv'. JSON input schema example: {\"type\":\"object\",\"properties\":{\"serviceName\":{\"type\":\"string\"}}}")]
     public static ServiceInfoModel? GetServiceDetails(
         [System.ComponentModel.DescriptionAttribute("The exact name of the service.")] string serviceName)
     {
         try
         {
+            if (string.IsNullOrWhiteSpace(serviceName)) return null;
             using var service = new ServiceController(serviceName);
             return new ServiceInfoModel
             {
@@ -72,12 +73,13 @@ public class ServiceTools
         }
     }
 
-    [McpServerTool(Name = "start_service")]
+    [McpServerTool(Name = "start_service"), Description("Attempts to start a Windows service. Parameter: serviceName. Requires privilege to start services and may fail if service is disabled/unavailable. Operation modifies system state. Example: serviceName='Spooler'. JSON input schema example: {\"type\":\"object\",\"properties\":{\"serviceName\":{\"type\":\"string\"}}}")]
     public static string StartService(
         [System.ComponentModel.DescriptionAttribute("The name of the service to start.")] string serviceName)
     {
         try
         {
+            if (string.IsNullOrWhiteSpace(serviceName)) return "Error: serviceName is required.";
             using var service = new ServiceController(serviceName);
             if (service.Status == ServiceControllerStatus.Running)
             {
@@ -93,12 +95,13 @@ public class ServiceTools
         }
     }
 
-    [McpServerTool(Name = "stop_service")]
+    [McpServerTool(Name = "stop_service"), Description("Attempts to stop a running Windows service. Parameter: serviceName. Requires privilege and will fail if service cannot be stopped (e.g., protected services). Operation modifies system state. Example: serviceName='Spooler'. JSON input schema example: {\"type\":\"object\",\"properties\":{\"serviceName\":{\"type\":\"string\"}}}")]
     public static string StopService(
         [System.ComponentModel.DescriptionAttribute("The name of the service to stop.")] string serviceName)
     {
         try
         {
+            if (string.IsNullOrWhiteSpace(serviceName)) return "Error: serviceName is required.";
             using var service = new ServiceController(serviceName);
             if (service.Status == ServiceControllerStatus.Stopped)
             {

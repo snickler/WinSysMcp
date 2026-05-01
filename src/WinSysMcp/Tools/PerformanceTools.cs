@@ -7,7 +7,7 @@ namespace WinSysMcp.Tools;
 [McpServerToolType]
 public class PerformanceTools
 {
-    [McpServerTool(Name = "get_system_metrics")]
+    [McpServerTool(Name = "get_system_metrics"), Description("Returns real-time system metrics (CPU percentage, available memory MB, system up time seconds). No parameters. Uses Performance Counters which may require permissions and can take a short sample period; first measurement may be delayed briefly. Example: no parameters.")]
     public static SystemMetricsModel GetSystemMetrics()
     {
         var metrics = new SystemMetricsModel();
