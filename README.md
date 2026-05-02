@@ -129,6 +129,8 @@ dotnet publish src/WinSysMcp -c Release -r win-x64
 dotnet test tests/WinSysMcp.Tests
 ```
 
+GitHub Actions CI/CD now runs the test suite and Native AOT publishes as matching runtime matrices: `win-arm64` tests/publishes run on `windows-11-arm64`, `win-x64` tests/publishes run on the standard Windows runner, and tagged releases wait for both the test and AOT matrices before publishing.
+
 ---
 
 ## Regenerating the Tool Catalog

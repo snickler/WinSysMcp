@@ -6,12 +6,20 @@ on:
       - 'v*.*.*'
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  release:
-    name: Build & Publish Release
-    runs-on: windows-latest
+  test:
+    name: Run Tests (${{ matrix.runtime }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runtime: win-arm64
+            runner: windows-11-arm64
+          - runtime: win-x64
+            runner: windows-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -22,19 +30,65 @@ jobs:
           dotnet-version: '10.x'
 
       - name: Test
-        run: dotnet test tests/WinSysMcp.Tests -c Debug
+        run: dotnet test tests/WinSysMcp.Tests -r ${{ matrix.runtime }} --logger "trx;LogFileName=results-${{ matrix.runtime }}.trx"
 
-      - name: Publish AOT (arm64)
-        run: dotnet publish src/WinSysMcp -c Release -r win-arm64 -o publish/arm64
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.runtime }}
+          path: '**/TestResults/*.trx'
 
-      - name: Publish AOT (x64)
-        run: dotnet publish src/WinSysMcp -c Release -r win-x64 -o publish/x64
+  build:
+    name: Build Release (${{ matrix.runtime }})
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runtime: win-arm64
+            runner: windows-11-arm64
+          - runtime: win-x64
+            runner: windows-latest
 
-      - name: Rename binaries
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.x'
+
+      - name: Publish AOT
+        run: dotnet publish src/WinSysMcp -c Release -r ${{ matrix.runtime }} -o publish/${{ matrix.runtime }}
+
+      - name: Stage release binary
         shell: pwsh
         run: |
-          Copy-Item publish/arm64/winsysmcp.exe publish/winsysmcp-win-arm64.exe
-          Copy-Item publish/x64/winsysmcp.exe   publish/winsysmcp-win-x64.exe
+          Copy-Item publish/${{ matrix.runtime }}/winsysmcp.exe publish/winsysmcp-${{ matrix.runtime }}.exe
+
+      - name: Upload release artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: winsysmcp-${{ matrix.runtime }}
+          path: publish/winsysmcp-${{ matrix.runtime }}.exe
+
+  release:
+    name: Create GitHub Release
+    runs-on: windows-latest
+    needs:
+      - test
+      - build
+    permissions:
+      contents: write
+
+    steps:
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: publish
+          pattern: winsysmcp-*
+          merge-multiple: true
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
