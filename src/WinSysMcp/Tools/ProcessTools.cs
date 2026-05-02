@@ -7,6 +7,15 @@ namespace WinSysMcp.Tools;
 [McpServerToolType]
 public class ProcessTools
 {
+    private static readonly HashSet<string> BlockedExecutableNames = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "cmd", "cmd.exe",
+        "powershell", "powershell.exe", "pwsh", "pwsh.exe",
+        "wscript", "wscript.exe", "cscript", "cscript.exe",
+        "mshta", "mshta.exe", "regsvr32", "regsvr32.exe",
+        "rundll32", "rundll32.exe", "msiexec", "msiexec.exe"
+    };
+
     [McpServerTool(Name = "get_top_processes"), Description("Returns the top N running processes sorted by memory (RSS). Parameter: count (default 10). Read-only; may skip system processes due to access restrictions. Example: count=5. JSON input schema example: {\"type\":\"object\",\"properties\":{\"count\":{\"type\":\"integer\"}}}")]
     public static List<ProcessInfoModel> GetTopProcesses(
         [System.ComponentModel.DescriptionAttribute("The number of processes to return. Default is 10.")] int count = 10)
@@ -86,11 +95,14 @@ public class ProcessTools
         try
         {
             if (string.IsNullOrWhiteSpace(fileName)) return "Error: fileName is required.";
+            if (!Path.IsPathRooted(fileName)) return "Error: fileName must be an absolute path to the executable.";
+            var executableName = Path.GetFileName(fileName);
+            if (BlockedExecutableNames.Contains(executableName)) return $"Error: Launching '{executableName}' is blocked for security reasons.";
             var startInfo = new ProcessStartInfo
             {
                 FileName = fileName,
                 Arguments = arguments,
-                UseShellExecute = true
+                UseShellExecute = false
             };
             var process = Process.Start(startInfo);
             return process != null ? $"Started process {process.Id}." : "Failed to start process.";

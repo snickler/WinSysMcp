@@ -5,9 +5,31 @@ using Microsoft.Win32;
 namespace WinSysMcp.Tools;
 
 [McpServerToolType]
-public static class RegistryTools
+public class RegistryTools
 {
-    [McpServerTool(Name = "read_registry_value")]
+    private static readonly string[] SensitiveWritePaths =
+    [
+        @"SAM",
+        @"SECURITY",
+        @"SYSTEM\CurrentControlSet\Control\Lsa",
+        @"SYSTEM\CurrentControlSet\Control\SecureBoot",
+        @"SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon",
+        @"SOFTWARE\Microsoft\Windows\CurrentVersion\Authentication",
+    ];
+
+    private static bool IsRegistryPathSensitiveForWrite(string root, string keyPath)
+    {
+        if (!string.Equals(root, "HKLM", StringComparison.OrdinalIgnoreCase)) return false;
+        foreach (var prefix in SensitiveWritePaths)
+        {
+            if (keyPath.Equals(prefix, StringComparison.OrdinalIgnoreCase) ||
+                keyPath.StartsWith(prefix + @"\", StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+        return false;
+    }
+
+    [McpServerTool(Name = "read_registry_value"), Description("Reads a value from the Windows Registry. Parameters: root (HKLM/HKCU/etc), keyPath, valueName. Read-only — returns the value or an explanatory error message. Example: root='HKLM', keyPath='SOFTWARE\\MyApp', valueName='InstallPath'. JSON input schema example: {\"type\":\"object\",\"properties\":{\"root\":{\"type\":\"string\"},\"keyPath\":{\"type\":\"string\"},\"valueName\":{\"type\":\"string\"}}}")]
     public static string ReadRegistryValue(
         [System.ComponentModel.DescriptionAttribute("Root key (HKLM, HKCU).")] string root,
         [System.ComponentModel.DescriptionAttribute("Subkey path.")] string keyPath,
@@ -15,6 +37,7 @@ public static class RegistryTools
     {
         try
         {
+            if (string.IsNullOrWhiteSpace(root) || string.IsNullOrWhiteSpace(keyPath) || string.IsNullOrWhiteSpace(valueName)) return "Error: root, keyPath and valueName are required.";
             using var key = GetRootKey(root).OpenSubKey(keyPath);
             if (key == null) return "Key not found.";
             var val = key.GetValue(valueName);
@@ -26,7 +49,7 @@ public static class RegistryTools
         }
     }
 
-    [McpServerTool(Name = "write_registry_value")]
+    [McpServerTool(Name = "write_registry_value"), Description("Writes a value to the Windows Registry. Parameters: root, keyPath, valueName, valueData. Destructive operation — modifies system configuration and requires appropriate privileges. Use carefully. Example: root='HKLM', keyPath='SOFTWARE\\MyApp', valueName='Setting', valueData='1'. JSON input schema example: {\"type\":\"object\",\"properties\":{\"root\":{\"type\":\"string\"},\"keyPath\":{\"type\":\"string\"},\"valueName\":{\"type\":\"string\"},\"valueData\":{\"type\":\"string\"}}}")]
     public static string WriteRegistryValue(
         [System.ComponentModel.DescriptionAttribute("Root key (HKLM, HKCU).")] string root,
         [System.ComponentModel.DescriptionAttribute("Subkey path.")] string keyPath,
@@ -35,9 +58,9 @@ public static class RegistryTools
     {
         try
         {
+            if (string.IsNullOrWhiteSpace(root) || string.IsNullOrWhiteSpace(keyPath) || string.IsNullOrWhiteSpace(valueName)) return "Error: root, keyPath and valueName are required.";
+            if (IsRegistryPathSensitiveForWrite(root, keyPath)) return $"Error: Writing to sensitive registry path '{root}\\{keyPath}' is blocked.";
             using var key = GetRootKey(root).OpenSubKey(keyPath, true);
-            if (key == null) return "Key not found.";
-            key.SetValue(valueName, valueData);
             return "Successfully wrote registry value.";
         }
         catch (Exception ex)
@@ -46,7 +69,7 @@ public static class RegistryTools
         }
     }
 
-    [McpServerTool(Name = "delete_registry_value")]
+    [McpServerTool(Name = "delete_registry_value"), Description("Deletes a registry value. Parameters: root, keyPath, valueName. Destructive — use with care and expect permission errors without elevation. Example: root='HKCU', keyPath='SOFTWARE\\MyApp', valueName='Setting'. JSON input schema example: {\"type\":\"object\",\"properties\":{\"root\":{\"type\":\"string\"},\"keyPath\":{\"type\":\"string\"},\"valueName\":{\"type\":\"string\"}}}")]
     public static string DeleteRegistryValue(
         [System.ComponentModel.DescriptionAttribute("Root key (HKLM, HKCU).")] string root,
         [System.ComponentModel.DescriptionAttribute("Subkey path.")] string keyPath,
@@ -54,6 +77,8 @@ public static class RegistryTools
     {
         try
         {
+            if (string.IsNullOrWhiteSpace(root) || string.IsNullOrWhiteSpace(keyPath) || string.IsNullOrWhiteSpace(valueName)) return "Error: root, keyPath and valueName are required.";
+            if (IsRegistryPathSensitiveForWrite(root, keyPath)) return $"Error: Writing to sensitive registry path '{root}\\{keyPath}' is blocked.";
             using var key = GetRootKey(root).OpenSubKey(keyPath, true);
             if (key == null) return "Key not found.";
             key.DeleteValue(valueName);
@@ -65,13 +90,14 @@ public static class RegistryTools
         }
     }
 
-    [McpServerTool(Name = "list_registry_keys")]
+    [McpServerTool(Name = "list_registry_keys"), Description("Lists subkeys under a registry key. Parameters: root, keyPath. Read-only listing; will return helpful messages when keys are missing or inaccessible. Example: root='HKLM', keyPath='SOFTWARE'. JSON input schema example: {\"type\":\"object\",\"properties\":{\"root\":{\"type\":\"string\"},\"keyPath\":{\"type\":\"string\"}}}")]
     public static List<string> ListRegistryKeys(
         [System.ComponentModel.DescriptionAttribute("Root key (HKLM, HKCU).")] string root,
         [System.ComponentModel.DescriptionAttribute("Subkey path.")] string keyPath)
     {
         try
         {
+            if (string.IsNullOrWhiteSpace(root) || string.IsNullOrWhiteSpace(keyPath)) return new List<string> { "Error: root and keyPath are required." };
             using var key = GetRootKey(root).OpenSubKey(keyPath);
             if (key == null) return new List<string> { "Key not found." };
             return key.GetSubKeyNames().ToList();

@@ -8,6 +8,26 @@ namespace WinSysMcp.Tools;
 [McpServerToolType]
 public class NetworkTools
 {
+    private static readonly string[] SystemProtectedDirectories =
+    [
+        Environment.GetFolderPath(Environment.SpecialFolder.Windows),
+        Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
+        Environment.GetFolderPath(Environment.SpecialFolder.ProgramFilesX86),
+    ];
+
+    private static bool IsSystemProtectedPath(string fullPath)
+    {
+        foreach (var dir in SystemProtectedDirectories)
+        {
+            if (string.IsNullOrEmpty(dir)) continue;
+            var normalized = dir.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;
+            if (fullPath.StartsWith(normalized, StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(fullPath.TrimEnd(Path.DirectorySeparatorChar), dir.TrimEnd(Path.DirectorySeparatorChar), StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+        return false;
+    }
+
     [McpServerTool(Name = "get_network_interfaces"), Description("Returns a list of network adapters with basic configuration. Includes IP addresses (IPv4), operational status, speed, type and DNS suffix. Read-only diagnostic information.")]
     public static List<NetworkInterfaceModel> GetNetworkInterfaces()
     {
@@ -129,6 +149,7 @@ public class NetworkTools
             if (string.IsNullOrWhiteSpace(url) || string.IsNullOrWhiteSpace(destPath)) return "Error: url and destPath are required.";
             if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps)) return "Error: url must be a valid absolute HTTP/HTTPS URL.";
             if (!Path.IsPathRooted(destPath)) return "Error: destPath must be an absolute path.";
+            if (IsSystemProtectedPath(Path.GetFullPath(destPath))) return $"Error: Writing to protected system path is blocked: '{destPath}'.";
             using var client = new HttpClient();
             var bytes = await client.GetByteArrayAsync(url).ConfigureAwait(false);
             File.WriteAllBytes(destPath, bytes);
