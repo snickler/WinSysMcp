@@ -5,45 +5,51 @@ using System.Diagnostics;
 namespace WinSysMcp.Tools;
 
 [McpServerToolType]
-public static class ProcessTools
+public class ProcessTools
 {
-    [McpServerTool(Name = "get_top_processes")]
+    [McpServerTool(Name = "get_top_processes"), Description("Returns the top N running processes sorted by memory (RSS). Parameter: count (default 10). Read-only; may skip system processes due to access restrictions. Example: count=5. JSON input schema example: {\"type\":\"object\",\"properties\":{\"count\":{\"type\":\"integer\"}}}")]
     public static List<ProcessInfoModel> GetTopProcesses(
         [System.ComponentModel.DescriptionAttribute("The number of processes to return. Default is 10.")] int count = 10)
     {
+        if (count <= 0) count = 10;
+        if (count > 200) count = 200; // don't allow huge values
         var processes = Process.GetProcesses();
-        
-        var sorted = processes
-            .OrderByDescending(p => p.WorkingSet64)
-            .Take(count)
-            .Select(p => {
-                try
-                {
-                    return new ProcessInfoModel
+        try
+        {
+            return processes
+                .OrderByDescending(p => p.WorkingSet64)
+                .Take(count)
+                .Select(p => {
+                    try
                     {
-                        Id = p.Id,
-                        ProcessName = p.ProcessName,
-                        WorkingSet64 = p.WorkingSet64,
-                        PrivateMemorySize64 = p.PrivateMemorySize64,
-                        StartTime = TryGetStartTime(p),
-                        Responding = p.Responding
-                    };
-                }
-                catch
-                {
-                    // Handle access denied for some system processes
-                    return new ProcessInfoModel
+                        return new ProcessInfoModel
+                        {
+                            Id = p.Id,
+                            ProcessName = p.ProcessName,
+                            WorkingSet64 = p.WorkingSet64,
+                            PrivateMemorySize64 = p.PrivateMemorySize64,
+                            StartTime = TryGetStartTime(p),
+                            Responding = p.Responding
+                        };
+                    }
+                    catch
                     {
-                        Id = p.Id,
-                        ProcessName = p.ProcessName,
-                        WorkingSet64 = p.WorkingSet64,
-                        Note = "Access Denied to details"
-                    };
-                }
-            })
-            .ToList();
-
-        return sorted;
+                        // Handle access denied for some system processes
+                        return new ProcessInfoModel
+                        {
+                            Id = p.Id,
+                            ProcessName = p.ProcessName,
+                            WorkingSet64 = p.WorkingSet64,
+                            Note = "Access Denied to details"
+                        };
+                    }
+                })
+                .ToList();
+        }
+        finally
+        {
+            foreach (var p in processes) p.Dispose();
+        }
     }
 
     private static DateTime? TryGetStartTime(Process p)
@@ -51,13 +57,14 @@ public static class ProcessTools
         try { return p.StartTime; } catch { return null; }
     }
 
-    [McpServerTool(Name = "kill_process")]
+    [McpServerTool(Name = "kill_process"), Description("Terminates a process by PID. Parameter: processId. Destructive and requires permissions; can fail for protected or system processes. Use cautiously. Example: processId=1234. JSON input schema example: {\"type\":\"object\",\"properties\":{\"processId\":{\"type\":\"integer\"}}}")]
     public static string KillProcess(
         [System.ComponentModel.DescriptionAttribute("The ID of the process to terminate.")] int processId)
     {
         try
         {
-            var process = Process.GetProcessById(processId);
+            if (processId <= 0) return "Error: processId must be a positive integer.";
+            using var process = Process.GetProcessById(processId);
             process.Kill();
             return $"Successfully terminated process {processId} ({process.ProcessName}).";
         }
@@ -71,13 +78,14 @@ public static class ProcessTools
         }
     }
 
-    [McpServerTool(Name = "start_process")]
+    [McpServerTool(Name = "start_process"), Description("Starts a new process with the given executable path and optional arguments. Parameters: fileName, arguments (optional). Use caution launching untrusted executables; process runs under server user account. Example: fileName='C:\\Program Files\\MyApp\\app.exe', arguments='--verbose'. JSON input schema example: {\"type\":\"object\",\"properties\":{\"fileName\":{\"type\":\"string\"},\"arguments\":{\"type\":\"string\"}}}")]
     public static string StartProcess(
         [System.ComponentModel.DescriptionAttribute("The path to the executable.")] string fileName,
         [System.ComponentModel.DescriptionAttribute("Arguments to pass.")] string arguments = "")
     {
         try
         {
+            if (string.IsNullOrWhiteSpace(fileName)) return "Error: fileName is required.";
             var startInfo = new ProcessStartInfo
             {
                 FileName = fileName,
@@ -93,13 +101,14 @@ public static class ProcessTools
         }
     }
 
-    [McpServerTool(Name = "get_process_details")]
+    [McpServerTool(Name = "get_process_details"), Description("Returns detailed metadata for a process by PID: name, memory details, start time, module path when accessible. Parameter: processId. Read-only; may fail on protected processes. Example: processId=1234. JSON input schema example: {\"type\":\"object\",\"properties\":{\"processId\":{\"type\":\"integer\"}}}")]
     public static ProcessInfoModel? GetProcessDetails(
         [System.ComponentModel.DescriptionAttribute("The ID of the process.")] int processId)
     {
         try
         {
-            var p = Process.GetProcessById(processId);
+            if (processId <= 0) return null;
+            using var p = Process.GetProcessById(processId);
             return new ProcessInfoModel
             {
                 Id = p.Id,
