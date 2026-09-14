@@ -2,36 +2,66 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net10.0-windows</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <EnableTrimAnalyzer>true</EnableTrimAnalyzer>
     <EnableAotAnalyzer>true</EnableAotAnalyzer>
+    <RootNamespace>WinSysMcp</RootNamespace>
+    <AssemblyName>winsysmcp</AssemblyName>
+    <EnableWindowsApis>false</EnableWindowsApis>
+  </PropertyGroup>
+
+  <!-- Windows Win32/registry/service APIs when targeting a Windows RID, or local Windows JIT builds. -->
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' != '' and $(RuntimeIdentifier.StartsWith('win'))">
+    <EnableWindowsApis>true</EnableWindowsApis>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' == '' and $([MSBuild]::IsOSPlatform('Windows'))">
+    <EnableWindowsApis>true</EnableWindowsApis>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(EnableWindowsApis)' == 'true'">
+    <DefineConstants>$(DefineConstants);WINDOWS_APIS</DefineConstants>
+    <!-- Windows API usage is compile-gated for non-Windows RIDs; silence cross-platform analyzer noise on Windows builds. -->
+    <NoWarn>$(NoWarn);CA1416</NoWarn>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <PublishAot>true</PublishAot>
-    <RuntimeIdentifier>win-arm64</RuntimeIdentifier>
     <InvariantGlobalization>true</InvariantGlobalization>
     <IlcOptimizationPreference>Speed</IlcOptimizationPreference>
     <StripSymbols>true</StripSymbols>
     <DefineConstants>$(DefineConstants);AOT_SAFE</DefineConstants>
   </PropertyGroup>
 
+  <!-- Default RID only when publishing Release without an explicit -r -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release' and '$(RuntimeIdentifier)' == '' and $([MSBuild]::IsOSPlatform('Windows'))">
+    <RuntimeIdentifier>win-arm64</RuntimeIdentifier>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)' == 'Release' and '$(RuntimeIdentifier)' == '' and $([MSBuild]::IsOSPlatform('Linux'))">
+    <RuntimeIdentifier>linux-x64</RuntimeIdentifier>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Hosting" Version="9.0.0" />
     <PackageReference Include="ModelContextProtocol" Version="0.4.0-*" />
-    <PackageReference Include="System.Diagnostics.EventLog" Version="10.0.0" />
-    <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="10.0.0" />
-    <PackageReference Include="System.DirectoryServices.AccountManagement" Version="10.0.0" Condition="'$(PublishAot)' != 'true'" />
-    <PackageReference Include="System.Management" Version="10.0.0" Condition="'$(PublishAot)' != 'true'" />
-    <PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.0" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(PublishAot)' == 'true'">
+  <ItemGroup Condition="'$(EnableWindowsApis)' == 'true'">
+    <PackageReference Include="System.Diagnostics.EventLog" Version="10.0.0" />
+    <PackageReference Include="System.Diagnostics.PerformanceCounter" Version="10.0.0" />
+    <PackageReference Include="System.ServiceProcess.ServiceController" Version="10.0.0" />
+    <PackageReference Include="System.DirectoryServices.AccountManagement" Version="10.0.0" Condition="'$(PublishAot)' != 'true'" />
+    <PackageReference Include="System.Management" Version="10.0.0" Condition="'$(PublishAot)' != 'true'" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(PublishAot)' == 'true' or '$(EnableWindowsApis)' != 'true'">
     <Compile Remove="Tools\WmiTools.cs" />
     <Compile Remove="Tools\ReliabilityTools.cs" />
     <Compile Remove="Tools\PowerAndSecurityTools.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(EnableWindowsApis)' != 'true'">
+    <Compile Remove="Tools\RegistryTools.cs" />
   </ItemGroup>
 
 </Project>

@@ -1,56 +1,26 @@
 using ModelContextProtocol.Server;
 using System.ComponentModel;
-using System.Diagnostics;
 
 namespace WinSysMcp.Tools;
 
 [McpServerToolType]
 public class TaskSchedulerTools
 {
-    private static string RunCommand(string command, string arguments)
-    {
-        try
-        {
-            var process = new Process
-            {
-                StartInfo = new ProcessStartInfo
-                {
-                    FileName = command,
-                    Arguments = arguments,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    UseShellExecute = false,
-                    CreateNoWindow = true
-                }
-            };
-
-            process.Start();
-            string output = process.StandardOutput.ReadToEnd();
-            string error = process.StandardError.ReadToEnd();
-            process.WaitForExit();
-
-            if (process.ExitCode != 0)
-            {
-                return $"Error (Exit Code {process.ExitCode}): {error}";
-            }
-
-            return output;
-        }
-        catch (Exception ex)
-        {
-            return $"Exception running command: {ex.Message}";
-        }
-    }
-
-    [McpServerTool(Name = "get_scheduled_tasks"), Description("Retrieves scheduled tasks via 'schtasks /query'. Parameter: format (TABLE|LIST|CSV, default CSV). Output is raw command text; permissions and scheduler service state affect results. Example: format='CSV'. JSON input schema example: {\"type\":\"object\",\"properties\":{\"format\":{\"type\":\"string\"}}}")]
+    [McpServerTool(Name = "get_scheduled_tasks"), Description("Retrieves scheduled tasks. Windows: schtasks /query. Linux: systemctl list-timers plus user crontab. Parameter: format (TABLE|LIST|CSV on Windows; ignored on Linux).")]
     public static string GetScheduledTasks(
-        [System.ComponentModel.Description("Output format: TABLE, LIST, or CSV. Default is CSV.")] string format = "CSV")
+        [Description("Output format on Windows: TABLE, LIST, or CSV. Default is CSV. Ignored on Linux.")] string format = "CSV")
     {
-        var fmt = (format ?? string.Empty).ToUpper();
-        if (fmt != "TABLE" && fmt != "LIST" && fmt != "CSV")
+#if WINDOWS_APIS
+        if (OperatingSystem.IsWindows())
         {
-            return "Invalid format. Use TABLE, LIST, or CSV.";
+            var fmt = (format ?? string.Empty).ToUpperInvariant();
+            if (fmt != "TABLE" && fmt != "LIST" && fmt != "CSV")
+                return "Invalid format. Use TABLE, LIST, or CSV.";
+            return OsProcess.Run("schtasks", $"/query /FO {fmt} /V");
         }
-        return RunCommand("schtasks", $"/query /FO {fmt} /V");
+#endif
+        var timers = OsProcess.Run("systemctl", "list-timers --all --no-pager");
+        var crontab = OsProcess.Run("crontab", "-l");
+        return $"=== systemd timers ===\n{timers}\n\n=== user crontab ===\n{crontab}";
     }
 }

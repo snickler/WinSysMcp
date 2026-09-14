@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-19T10:34:55.1271417Z",
+  "generatedAt": "2026-09-14T23:50:01.4362344Z",
   "toolset": "WinSysMcp",
   "tools": {
     "get_drives": {
@@ -31,7 +31,7 @@
     },
     "get_event_logs": {
       "source": "src/WinSysMcp/Tools/EventLogTools.cs",
-      "description": "Fetches recent entries from a Windows Event Log (e.g., Application, System). Parameters: logName (default \u0027Application\u0027), maxEvents (default 10), entryType (optional filter like \u0027Error\u0027/\u0027Warning\u0027/\u0027Information\u0027). Read-only; may require administrative privileges. Example: logName=\u0027System\u0027, maxEvents=20, entryType=\u0027Error\u0027. JSON input schema example: {\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022logName\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022maxEvents\u0022:{\u0022type\u0022:\u0022integer\u0022},\u0022entryType\u0022:{\u0022type\u0022:\u0022string\u0022}}}",
+      "description": "Fetches recent log entries. On Windows: Event Log (Application/System/etc). On Linux: journalctl (logName maps to systemd unit or \u0027system\u0027/\u0027user\u0027). Parameters: logName (default \u0027Application\u0027/\u0027system\u0027), maxEvents, entryType. Read-only; may require privileges.",
       "parameters": [
         {
           "name": "logName",
@@ -1049,25 +1049,25 @@
     },
     "flush_dns": {
       "source": "src/WinSysMcp/Tools/NetworkAdvancedTools.cs",
-      "description": "Flushes the DNS resolver cache via \u0027ipconfig /flushdns\u0027. This modifies system DNS cache state and may require permission; use when troubleshooting name resolution.",
+      "description": "Flushes the DNS resolver cache. Windows: ipconfig /flushdns. Linux: resolvectl flush-caches.",
       "parameters": null,
       "jsonInputSchema": null
     },
     "get_arp_table": {
       "source": "src/WinSysMcp/Tools/NetworkAdvancedTools.cs",
-      "description": "Runs \u0027arp -a\u0027 and returns the system ARP table as text. Read-only and useful for local network diagnostics \u2014 may require command availability depending on OS.",
+      "description": "Returns the system ARP/neighbor table. Windows: arp -a. Linux: ip neigh. Read-only.",
       "parameters": null,
       "jsonInputSchema": null
     },
     "get_dns_cache": {
       "source": "src/WinSysMcp/Tools/NetworkAdvancedTools.cs",
-      "description": "Runs \u0027ipconfig /displaydns\u0027 to show the local DNS resolver cache. Read-only informational command \u2014 may be empty depending on system state.",
+      "description": "Shows local DNS resolver cache/status. Windows: ipconfig /displaydns. Linux: resolvectl statistics (cache dump is often unavailable).",
       "parameters": null,
       "jsonInputSchema": null
     },
     "get_firewall_rules": {
       "source": "src/WinSysMcp/Tools/NetworkAdvancedTools.cs",
-      "description": "Fetches firewall rules using \u0027netsh advfirewall firewall show rule name=all\u0027. Parameter: ruleName (optional). Read-only but requires netsh availability and adequate privileges to see full details. Example: ruleName=\u0027all\u0027 or \u0027Allow HTTP\u0027. JSON input schema example: {\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022ruleName\u0022:{\u0022type\u0022:\u0022string\u0022}}}",
+      "description": "Fetches firewall rules. Windows: netsh advfirewall. Linux: nft list ruleset or iptables -L. Parameter: ruleName (Windows filter; optional).",
       "parameters": [
         {
           "name": "ruleName",
@@ -1088,7 +1088,7 @@
     },
     "get_route_table": {
       "source": "src/WinSysMcp/Tools/NetworkAdvancedTools.cs",
-      "description": "Executes \u0027route print\u0027 and returns the system routing table. Read-only \u2014 useful for routing and networking diagnostics.",
+      "description": "Returns the system routing table. Windows: route print. Linux: ip route. Read-only.",
       "parameters": null,
       "jsonInputSchema": null
     },
@@ -1227,7 +1227,7 @@
     },
     "get_system_metrics": {
       "source": "src/WinSysMcp/Tools/PerformanceTools.cs",
-      "description": "Returns real-time system metrics (CPU percentage, available memory MB, system up time seconds). No parameters. Uses Performance Counters which may require permissions and can take a short sample period; first measurement may be delayed briefly. Example: no parameters.",
+      "description": "Returns real-time system metrics (CPU percentage, available memory MB, system up time seconds). Uses Performance Counters on Windows and /proc on Linux.",
       "parameters": null,
       "jsonInputSchema": null
     },
@@ -1549,7 +1549,7 @@
     },
     "get_service_details": {
       "source": "src/WinSysMcp/Tools/ServiceTools.cs",
-      "description": "Returns detailed data for a Windows service, including start/capability flags. Parameter: serviceName. Read-only; may require elevation. Example: serviceName=\u0027wuauserv\u0027. JSON input schema example: {\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022serviceName\u0022:{\u0022type\u0022:\u0022string\u0022}}}",
+      "description": "Returns detailed data for a service (Windows or systemd unit). Parameter: serviceName. Read-only; may require elevation. Example: serviceName=\u0027wuauserv\u0027 or \u0027ssh.service\u0027.",
       "parameters": [
         {
           "name": "serviceName",
@@ -1570,7 +1570,7 @@
     },
     "list_services": {
       "source": "src/WinSysMcp/Tools/ServiceTools.cs",
-      "description": "Lists Windows services with basic data (service name, display name, status, type). Optional filters: status (e.g., \u0027Running\u0027) and nameFilter (partial match). Read-only overview; may require elevated privileges for some details. JSON input schema example: {\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022status\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022nameFilter\u0022:{\u0022type\u0022:\u0022string\u0022}}}",
+      "description": "Lists system services (Windows Service Controller or systemd units on Linux) with name, display name, and status. Optional filters: status and nameFilter. Read-only overview; may require elevated privileges. JSON input schema example: {\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022status\u0022:{\u0022type\u0022:\u0022string\u0022},\u0022nameFilter\u0022:{\u0022type\u0022:\u0022string\u0022}}}",
       "parameters": [
         {
           "name": "status",
@@ -1601,7 +1601,7 @@
     },
     "start_service": {
       "source": "src/WinSysMcp/Tools/ServiceTools.cs",
-      "description": "Attempts to start a Windows service. Parameter: serviceName. Requires privilege to start services and may fail if service is disabled/unavailable. Operation modifies system state. Example: serviceName=\u0027Spooler\u0027. JSON input schema example: {\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022serviceName\u0022:{\u0022type\u0022:\u0022string\u0022}}}",
+      "description": "Attempts to start a service (Windows SCM or systemctl start). Requires privilege. Example: serviceName=\u0027Spooler\u0027 or \u0027nginx.service\u0027.",
       "parameters": [
         {
           "name": "serviceName",
@@ -1622,7 +1622,7 @@
     },
     "stop_service": {
       "source": "src/WinSysMcp/Tools/ServiceTools.cs",
-      "description": "Attempts to stop a running Windows service. Parameter: serviceName. Requires privilege and will fail if service cannot be stopped (e.g., protected services). Operation modifies system state. Example: serviceName=\u0027Spooler\u0027. JSON input schema example: {\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022serviceName\u0022:{\u0022type\u0022:\u0022string\u0022}}}",
+      "description": "Attempts to stop a service (Windows SCM or systemctl stop). Requires privilege. Example: serviceName=\u0027Spooler\u0027 or \u0027nginx.service\u0027.",
       "parameters": [
         {
           "name": "serviceName",
@@ -1643,7 +1643,7 @@
     },
     "get_installed_programs": {
       "source": "src/WinSysMcp/Tools/SoftwareTools.cs",
-      "description": "Lists installed programs discovered in common registry locations used by Windows Add/Remove Programs. Parameter: nameFilter (optional, partial match). Returns metadata such as DisplayName, DisplayVersion and Publisher. Read-only; results depend on privileges and registry virtualization. Example: nameFilter=\u0027Visual Studio\u0027. JSON input schema example: {\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022nameFilter\u0022:{\u0022type\u0022:\u0022string\u0022}}}",
+      "description": "Lists installed programs. On Windows: Add/Remove Programs registry. On Linux: dpkg/rpm package database. Parameter: nameFilter (optional). Read-only.",
       "parameters": [
         {
           "name": "nameFilter",
@@ -1664,7 +1664,7 @@
     },
     "abort_shutdown": {
       "source": "src/WinSysMcp/Tools/SystemTools.cs",
-      "description": "Attempts to cancel a pending shutdown or restart initiated by the OS shutdown command. Only affects a scheduled shutdown/restart that is currently pending and requires appropriate privileges.",
+      "description": "Attempts to cancel a pending shutdown or restart. Windows: shutdown /a. Linux: shutdown -c.",
       "parameters": null,
       "jsonInputSchema": null
     },
@@ -1703,7 +1703,7 @@
     },
     "get_startup_apps": {
       "source": "src/WinSysMcp/Tools/SystemTools.cs",
-      "description": "Lists applications configured to start automatically via common Registry Run keys (HKLM/HKCU). Returns name, command string and which hive (HKLM/HKCU). Read-only and safe.",
+      "description": "Lists applications configured to start automatically. Windows: Registry Run keys. Linux: ~/.config/autostart and enabled systemd user units. Read-only and safe.",
       "parameters": null,
       "jsonInputSchema": null
     },
@@ -1721,13 +1721,13 @@
     },
     "lock_workstation": {
       "source": "src/WinSysMcp/Tools/SystemTools.cs",
-      "description": "Locks the currently logged-in user session immediately. Requires interactive desktop; may not work from non-interactive services or remote sessions.",
+      "description": "Locks the currently logged-in user session immediately. Windows: LockWorkStation. Linux: loginctl lock-session. May not work from non-interactive services.",
       "parameters": null,
       "jsonInputSchema": null
     },
     "restart_computer": {
       "source": "src/WinSysMcp/Tools/SystemTools.cs",
-      "description": "Schedules a system restart. Parameters: delay (seconds, default 30) and comment. Requires privileges; this will reboot the machine. Example: delay=30, comment=\u0027Patch install\u0027. JSON input schema example: {\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022delay\u0022:{\u0022type\u0022:\u0022integer\u0022},\u0022comment\u0022:{\u0022type\u0022:\u0022string\u0022}}}",
+      "description": "Schedules a system restart. Parameters: delay (seconds, default 30) and comment. Requires privileges; this will reboot the machine.",
       "parameters": [
         {
           "name": "delay",
@@ -1758,7 +1758,7 @@
     },
     "shutdown_computer": {
       "source": "src/WinSysMcp/Tools/SystemTools.cs",
-      "description": "Schedules a system shutdown. Parameters: delay (seconds, default 30) and comment. Requires privileges; operation is destructive. Example: delay=60, comment=\u0027Maintenance\u0027. JSON input schema example: {\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022delay\u0022:{\u0022type\u0022:\u0022integer\u0022},\u0022comment\u0022:{\u0022type\u0022:\u0022string\u0022}}}",
+      "description": "Schedules a system shutdown. Parameters: delay (seconds, default 30) and comment. Requires privileges; operation is destructive.",
       "parameters": [
         {
           "name": "delay",
@@ -1789,7 +1789,7 @@
     },
     "get_scheduled_tasks": {
       "source": "src/WinSysMcp/Tools/TaskSchedulerTools.cs",
-      "description": "Retrieves scheduled tasks via \u0027schtasks /query\u0027. Parameter: format (TABLE|LIST|CSV, default CSV). Output is raw command text; permissions and scheduler service state affect results. Example: format=\u0027CSV\u0027. JSON input schema example: {\u0022type\u0022:\u0022object\u0022,\u0022properties\u0022:{\u0022format\u0022:{\u0022type\u0022:\u0022string\u0022}}}",
+      "description": "Retrieves scheduled tasks. Windows: schtasks /query. Linux: systemctl list-timers plus user crontab. Parameter: format (TABLE|LIST|CSV on Windows; ignored on Linux).",
       "parameters": [
         {
           "name": "format",

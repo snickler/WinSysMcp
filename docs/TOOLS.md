@@ -32,7 +32,7 @@ dotnet run --project tools/WinSysMcp.ToolSchemaGen
 
 ### `EventLogTools` (`src/WinSysMcp/Tools/EventLogTools.cs`)
 
-- `get_event_logs` — Fetches recent entries from a Windows Event Log (e.g., Application, System). Parameters: logName (default 'Application'), maxEvents (default 10), entryType (optional filter like 'Error'/'Warning'/'Information'). Read-only; may require administrative privileges. Example: logName='System', maxEvents=20, entryType='Error'. JSON input schema example: {"type":"object","properties":{"logName":{"type":"string"},"maxEvents":{"type":"integer"},"entryType":{"type":"string"}}}
+- `get_event_logs` — Fetches recent log entries. On Windows: Event Log (Application/System/etc). On Linux: journalctl (logName maps to systemd unit or 'system'/'user'). Parameters: logName (default 'Application'/'system'), maxEvents, entryType. Read-only; may require privileges.
   - Parameters: `logName?: string = "Application"`, `maxEvents?: integer = 10`, `entryType?: string`
 
 ### `FileTools` (`src/WinSysMcp/Tools/FileTools.cs`)
@@ -88,15 +88,15 @@ dotnet run --project tools/WinSysMcp.ToolSchemaGen
 
 ### `NetworkAdvancedTools` (`src/WinSysMcp/Tools/NetworkAdvancedTools.cs`)
 
-- `flush_dns` — Flushes the DNS resolver cache via 'ipconfig /flushdns'. This modifies system DNS cache state and may require permission; use when troubleshooting name resolution.
+- `flush_dns` — Flushes the DNS resolver cache. Windows: ipconfig /flushdns. Linux: resolvectl flush-caches.
   - Parameters: none
-- `get_arp_table` — Runs 'arp -a' and returns the system ARP table as text. Read-only and useful for local network diagnostics — may require command availability depending on OS.
+- `get_arp_table` — Returns the system ARP/neighbor table. Windows: arp -a. Linux: ip neigh. Read-only.
   - Parameters: none
-- `get_dns_cache` — Runs 'ipconfig /displaydns' to show the local DNS resolver cache. Read-only informational command — may be empty depending on system state.
+- `get_dns_cache` — Shows local DNS resolver cache/status. Windows: ipconfig /displaydns. Linux: resolvectl statistics (cache dump is often unavailable).
   - Parameters: none
-- `get_firewall_rules` — Fetches firewall rules using 'netsh advfirewall firewall show rule name=all'. Parameter: ruleName (optional). Read-only but requires netsh availability and adequate privileges to see full details. Example: ruleName='all' or 'Allow HTTP'. JSON input schema example: {"type":"object","properties":{"ruleName":{"type":"string"}}}
+- `get_firewall_rules` — Fetches firewall rules. Windows: netsh advfirewall. Linux: nft list ruleset or iptables -L. Parameter: ruleName (Windows filter; optional).
   - Parameters: `ruleName?: string = "all"`
-- `get_route_table` — Executes 'route print' and returns the system routing table. Read-only — useful for routing and networking diagnostics.
+- `get_route_table` — Returns the system routing table. Windows: route print. Linux: ip route. Read-only.
   - Parameters: none
 
 ### `NetworkTools` (`src/WinSysMcp/Tools/NetworkTools.cs`)
@@ -118,7 +118,7 @@ dotnet run --project tools/WinSysMcp.ToolSchemaGen
 
 ### `PerformanceTools` (`src/WinSysMcp/Tools/PerformanceTools.cs`)
 
-- `get_system_metrics` — Returns real-time system metrics (CPU percentage, available memory MB, system up time seconds). No parameters. Uses Performance Counters which may require permissions and can take a short sample period; first measurement may be delayed briefly. Example: no parameters.
+- `get_system_metrics` — Returns real-time system metrics (CPU percentage, available memory MB, system up time seconds). Uses Performance Counters on Windows and /proc on Linux.
   - Parameters: none
 
 ### `PowerAndSecurityTools` (`src/WinSysMcp/Tools/PowerAndSecurityTools.cs`)
@@ -163,23 +163,23 @@ dotnet run --project tools/WinSysMcp.ToolSchemaGen
 
 ### `ServiceTools` (`src/WinSysMcp/Tools/ServiceTools.cs`)
 
-- `get_service_details` — Returns detailed data for a Windows service, including start/capability flags. Parameter: serviceName. Read-only; may require elevation. Example: serviceName='wuauserv'. JSON input schema example: {"type":"object","properties":{"serviceName":{"type":"string"}}}
+- `get_service_details` — Returns detailed data for a service (Windows or systemd unit). Parameter: serviceName. Read-only; may require elevation. Example: serviceName='wuauserv' or 'ssh.service'.
   - Parameters: `serviceName: string`
-- `list_services` — Lists Windows services with basic data (service name, display name, status, type). Optional filters: status (e.g., 'Running') and nameFilter (partial match). Read-only overview; may require elevated privileges for some details. JSON input schema example: {"type":"object","properties":{"status":{"type":"string"},"nameFilter":{"type":"string"}}}
+- `list_services` — Lists system services (Windows Service Controller or systemd units on Linux) with name, display name, and status. Optional filters: status and nameFilter. Read-only overview; may require elevated privileges. JSON input schema example: {"type":"object","properties":{"status":{"type":"string"},"nameFilter":{"type":"string"}}}
   - Parameters: `status?: string`, `nameFilter?: string`
-- `start_service` — Attempts to start a Windows service. Parameter: serviceName. Requires privilege to start services and may fail if service is disabled/unavailable. Operation modifies system state. Example: serviceName='Spooler'. JSON input schema example: {"type":"object","properties":{"serviceName":{"type":"string"}}}
+- `start_service` — Attempts to start a service (Windows SCM or systemctl start). Requires privilege. Example: serviceName='Spooler' or 'nginx.service'.
   - Parameters: `serviceName: string`
-- `stop_service` — Attempts to stop a running Windows service. Parameter: serviceName. Requires privilege and will fail if service cannot be stopped (e.g., protected services). Operation modifies system state. Example: serviceName='Spooler'. JSON input schema example: {"type":"object","properties":{"serviceName":{"type":"string"}}}
+- `stop_service` — Attempts to stop a service (Windows SCM or systemctl stop). Requires privilege. Example: serviceName='Spooler' or 'nginx.service'.
   - Parameters: `serviceName: string`
 
 ### `SoftwareTools` (`src/WinSysMcp/Tools/SoftwareTools.cs`)
 
-- `get_installed_programs` — Lists installed programs discovered in common registry locations used by Windows Add/Remove Programs. Parameter: nameFilter (optional, partial match). Returns metadata such as DisplayName, DisplayVersion and Publisher. Read-only; results depend on privileges and registry virtualization. Example: nameFilter='Visual Studio'. JSON input schema example: {"type":"object","properties":{"nameFilter":{"type":"string"}}}
+- `get_installed_programs` — Lists installed programs. On Windows: Add/Remove Programs registry. On Linux: dpkg/rpm package database. Parameter: nameFilter (optional). Read-only.
   - Parameters: `nameFilter?: string`
 
 ### `SystemTools` (`src/WinSysMcp/Tools/SystemTools.cs`)
 
-- `abort_shutdown` — Attempts to cancel a pending shutdown or restart initiated by the OS shutdown command. Only affects a scheduled shutdown/restart that is currently pending and requires appropriate privileges.
+- `abort_shutdown` — Attempts to cancel a pending shutdown or restart. Windows: shutdown /a. Linux: shutdown -c.
   - Parameters: none
 - `echo_message` — Echoes back the provided text. Use for connection and health checks. Parameter: message — string returned verbatim. Example: message='ping'. JSON input schema example: {"type":"object","properties":{"message":{"type":"string"}}}
   - Parameters: `message: string`
@@ -187,22 +187,22 @@ dotnet run --project tools/WinSysMcp.ToolSchemaGen
   - Parameters: none
 - `get_os_version` — Reports detailed OS version information and whether the OS is 32-bit or 64-bit. Useful for troubleshooting and compatibility checks.
   - Parameters: none
-- `get_startup_apps` — Lists applications configured to start automatically via common Registry Run keys (HKLM/HKCU). Returns name, command string and which hive (HKLM/HKCU). Read-only and safe.
+- `get_startup_apps` — Lists applications configured to start automatically. Windows: Registry Run keys. Linux: ~/.config/autostart and enabled systemd user units. Read-only and safe.
   - Parameters: none
 - `get_system_info` — Returns key read-only system diagnostics: OS description, machine name, .NET runtime version and architecture. Safe to call — useful for diagnostics. Example: no parameters.
   - Parameters: none
 - `get_uptime` — Returns system uptime (time since last boot) as a human-readable string. Read-only diagnostic information.
   - Parameters: none
-- `lock_workstation` — Locks the currently logged-in user session immediately. Requires interactive desktop; may not work from non-interactive services or remote sessions.
+- `lock_workstation` — Locks the currently logged-in user session immediately. Windows: LockWorkStation. Linux: loginctl lock-session. May not work from non-interactive services.
   - Parameters: none
-- `restart_computer` — Schedules a system restart. Parameters: delay (seconds, default 30) and comment. Requires privileges; this will reboot the machine. Example: delay=30, comment='Patch install'. JSON input schema example: {"type":"object","properties":{"delay":{"type":"integer"},"comment":{"type":"string"}}}
+- `restart_computer` — Schedules a system restart. Parameters: delay (seconds, default 30) and comment. Requires privileges; this will reboot the machine.
   - Parameters: `delay?: integer = 30`, `comment?: string = "Restart initiated by MCP."`
-- `shutdown_computer` — Schedules a system shutdown. Parameters: delay (seconds, default 30) and comment. Requires privileges; operation is destructive. Example: delay=60, comment='Maintenance'. JSON input schema example: {"type":"object","properties":{"delay":{"type":"integer"},"comment":{"type":"string"}}}
+- `shutdown_computer` — Schedules a system shutdown. Parameters: delay (seconds, default 30) and comment. Requires privileges; operation is destructive.
   - Parameters: `delay?: integer = 30`, `comment?: string = "Shutdown initiated by MCP."`
 
 ### `TaskSchedulerTools` (`src/WinSysMcp/Tools/TaskSchedulerTools.cs`)
 
-- `get_scheduled_tasks` — Retrieves scheduled tasks via 'schtasks /query'. Parameter: format (TABLE|LIST|CSV, default CSV). Output is raw command text; permissions and scheduler service state affect results. Example: format='CSV'. JSON input schema example: {"type":"object","properties":{"format":{"type":"string"}}}
+- `get_scheduled_tasks` — Retrieves scheduled tasks. Windows: schtasks /query. Linux: systemctl list-timers plus user crontab. Parameter: format (TABLE|LIST|CSV on Windows; ignored on Linux).
   - Parameters: `format?: string = "CSV"`
 
 ### `WmiTools` (`src/WinSysMcp/Tools/WmiTools.cs`)

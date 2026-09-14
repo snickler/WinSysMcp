@@ -1,9 +1,20 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net10.0-windows</TargetFramework>
+    <TargetFramework>net10.0</TargetFramework>
     <IsPackable>false</IsPackable>
     <Nullable>enable</Nullable>
+    <EnableWindowsApis>false</EnableWindowsApis>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' != '' and $(RuntimeIdentifier.StartsWith('win'))">
+    <EnableWindowsApis>true</EnableWindowsApis>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' == '' and $([MSBuild]::IsOSPlatform('Windows'))">
+    <EnableWindowsApis>true</EnableWindowsApis>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(EnableWindowsApis)' == 'true'">
+    <DefineConstants>$(DefineConstants);WINDOWS_APIS</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,6 +30,10 @@
 
   <ItemGroup>
     <Compile Include="..\..\tools\WinSysMcp.ToolSchemaGen\ToolSchemaGenerator.cs" Link="Shared\ToolSchemaGenerator.cs" />
+  </ItemGroup>
+
+  <ItemGroup Condition="'$(EnableWindowsApis)' != 'true'">
+    <Compile Remove="RegistryToolsTests.cs" />
   </ItemGroup>
 
 </Project>

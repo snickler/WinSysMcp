@@ -20,6 +20,8 @@ jobs:
             runner: windows-11-arm64
           - runtime: win-x64
             runner: windows-latest
+          - runtime: linux-x64
+            runner: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -48,8 +50,20 @@ jobs:
         include:
           - runtime: win-arm64
             runner: windows-11-arm64
+            artifact: winsysmcp.exe
+            staged: winsysmcp-win-arm64.exe
           - runtime: win-x64
             runner: windows-latest
+            artifact: winsysmcp.exe
+            staged: winsysmcp-win-x64.exe
+          - runtime: linux-x64
+            runner: ubuntu-latest
+            artifact: winsysmcp
+            staged: winsysmcp-linux-x64
+          - runtime: linux-arm64
+            runner: ubuntu-24.04-arm
+            artifact: winsysmcp
+            staged: winsysmcp-linux-arm64
 
     steps:
       - uses: actions/checkout@v4
@@ -65,17 +79,17 @@ jobs:
       - name: Stage release binary
         shell: pwsh
         run: |
-          Copy-Item publish/${{ matrix.runtime }}/winsysmcp.exe publish/winsysmcp-${{ matrix.runtime }}.exe
+          Copy-Item "publish/${{ matrix.runtime }}/${{ matrix.artifact }}" "publish/${{ matrix.staged }}"
 
       - name: Upload release artifact
         uses: actions/upload-artifact@v4
         with:
           name: winsysmcp-${{ matrix.runtime }}
-          path: publish/winsysmcp-${{ matrix.runtime }}.exe
+          path: publish/${{ matrix.staged }}
 
   release:
     name: Create GitHub Release
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
     needs:
       - test
       - build
@@ -96,4 +110,6 @@ jobs:
           files: |
             publish/winsysmcp-win-arm64.exe
             publish/winsysmcp-win-x64.exe
+            publish/winsysmcp-linux-x64
+            publish/winsysmcp-linux-arm64
           generate_release_notes: true

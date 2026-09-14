@@ -25,7 +25,7 @@ namespace WinSysMcp.Serialization;
 [JsonSerializable(typeof(List<SoftwareTools.InstalledProgramModel>))]
 [JsonSerializable(typeof(SystemTools.StartupAppModel))]
 [JsonSerializable(typeof(List<SystemTools.StartupAppModel>))]
-#if !AOT_SAFE
+#if WINDOWS_APIS && !AOT_SAFE
 [JsonSerializable(typeof(ReliabilityTools.ReliabilityRecordModel))]
 [JsonSerializable(typeof(List<ReliabilityTools.ReliabilityRecordModel>))]
 #endif

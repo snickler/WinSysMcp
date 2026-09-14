@@ -1,7 +1,10 @@
 using ModelContextProtocol.Server;
 using System.ComponentModel;
-using System.Runtime.InteropServices;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
+#if WINDOWS_APIS
+using Microsoft.Win32;
+#endif
 
 namespace WinSysMcp.Tools;
 
@@ -15,7 +18,7 @@ public class SystemTools
     }
 
     [McpServerTool(Name = "echo_message"), Description("Echoes back the provided text. Use for connection and health checks. Parameter: message — string returned verbatim. Example: message='ping'. JSON input schema example: {\"type\":\"object\",\"properties\":{\"message\":{\"type\":\"string\"}}}")]
-    public static string Echo([System.ComponentModel.DescriptionAttribute("The message to echo")] string message)
+    public static string Echo([Description("The message to echo")] string message)
     {
         return $"Echo: {message}";
     }
@@ -32,47 +35,14 @@ public class SystemTools
         return result;
     }
 
-    [McpServerTool(Name = "get_startup_apps"), Description("Lists applications configured to start automatically via common Registry Run keys (HKLM/HKCU). Returns name, command string and which hive (HKLM/HKCU). Read-only and safe.")]
+    [McpServerTool(Name = "get_startup_apps"), Description("Lists applications configured to start automatically. Windows: Registry Run keys. Linux: ~/.config/autostart and enabled systemd user units. Read-only and safe.")]
     public static List<StartupAppModel> GetStartupApps()
     {
-        var apps = new List<StartupAppModel>();
-        string[] runKeys = {
-            @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run",
-            @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Run"
-        };
-
-        foreach (var keyPath in runKeys)
-        {
-            try
-            {
-                // Check Local Machine
-                using (var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(keyPath))
-                {
-                    if (key != null)
-                    {
-                        foreach (var name in key.GetValueNames())
-                        {
-                            apps.Add(new StartupAppModel { Name = name, Command = key.GetValue(name)?.ToString() ?? "", Location = "HKLM" });
-                        }
-                    }
-                }
-
-                // Check Current User
-                using (var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(keyPath))
-                {
-                    if (key != null)
-                    {
-                        foreach (var name in key.GetValueNames())
-                        {
-                            apps.Add(new StartupAppModel { Name = name, Command = key.GetValue(name)?.ToString() ?? "", Location = "HKCU" });
-                        }
-                    }
-                }
-            }
-            catch { }
-        }
-
-        return apps;
+#if WINDOWS_APIS
+        if (OperatingSystem.IsWindows())
+            return GetWindowsStartupApps();
+#endif
+        return GetLinuxStartupApps();
     }
 
     [McpServerTool(Name = "get_uptime"), Description("Returns system uptime (time since last boot) as a human-readable string. Read-only diagnostic information.")]
@@ -88,13 +58,22 @@ public class SystemTools
         return $"{Environment.OSVersion} ({(Environment.Is64BitOperatingSystem ? "64-bit" : "32-bit")})";
     }
 
-    [McpServerTool(Name = "lock_workstation"), Description("Locks the currently logged-in user session immediately. Requires interactive desktop; may not work from non-interactive services or remote sessions.")]
+    [McpServerTool(Name = "lock_workstation"), Description("Locks the currently logged-in user session immediately. Windows: LockWorkStation. Linux: loginctl lock-session. May not work from non-interactive services.")]
     public static string LockWorkstation()
     {
         try
         {
-            LockWorkStation();
-            return "Workstation locked.";
+#if WINDOWS_APIS
+            if (OperatingSystem.IsWindows())
+            {
+                LockWorkStation();
+                return "Workstation locked.";
+            }
+#endif
+            var result = OsProcess.Run("loginctl", "lock-session");
+            return result.StartsWith("Error", StringComparison.OrdinalIgnoreCase) || result.StartsWith("Exception", StringComparison.OrdinalIgnoreCase)
+                ? result
+                : "Workstation locked.";
         }
         catch (Exception ex)
         {
@@ -102,16 +81,37 @@ public class SystemTools
         }
     }
 
-    [McpServerTool(Name = "shutdown_computer"), Description("Schedules a system shutdown. Parameters: delay (seconds, default 30) and comment. Requires privileges; operation is destructive. Example: delay=60, comment='Maintenance'. JSON input schema example: {\"type\":\"object\",\"properties\":{\"delay\":{\"type\":\"integer\"},\"comment\":{\"type\":\"string\"}}}")]
+    [McpServerTool(Name = "shutdown_computer"), Description("Schedules a system shutdown. Parameters: delay (seconds, default 30) and comment. Requires privileges; operation is destructive.")]
     public static string ShutdownComputer(
-        [System.ComponentModel.DescriptionAttribute("Delay in seconds. Default 30.")] int delay = 30,
-        [System.ComponentModel.DescriptionAttribute("Comment to display.")] string comment = "Shutdown initiated by MCP.")
+        [Description("Delay in seconds. Default 30.")] int delay = 30,
+        [Description("Comment to display.")] string comment = "Shutdown initiated by MCP.")
     {
         try
         {
             if (delay < 0) return "Error: delay must be >= 0.";
             if (comment?.Length > 200) return "Error: comment too long (max 200 chars).";
-            Process.Start("shutdown", $"/s /t {delay} /c \"{comment}\"");
+#if WINDOWS_APIS
+            if (OperatingSystem.IsWindows())
+            {
+                Process.Start("shutdown", $"/s /t {delay} /c \"{comment}\"");
+                return $"Shutdown initiated in {delay} seconds.";
+            }
+#endif
+            // GNU shutdown: +minutes; for seconds use systemd-run or sleep+shutdown.
+            var minutes = Math.Max(1, (int)Math.Ceiling(delay / 60.0));
+            if (delay == 0)
+            {
+                OsProcess.Run("shutdown", $"-h now {QuoteShell(comment ?? "")}");
+            }
+            else if (delay < 60)
+            {
+                OsProcess.Run("bash", $"-lc {QuoteShell($"sleep {delay} && shutdown -h now {comment}")}");
+            }
+            else
+            {
+                OsProcess.Run("shutdown", $"-h +{minutes} {QuoteShell(comment ?? "")}");
+            }
+
             return $"Shutdown initiated in {delay} seconds.";
         }
         catch (Exception ex)
@@ -120,16 +120,36 @@ public class SystemTools
         }
     }
 
-    [McpServerTool(Name = "restart_computer"), Description("Schedules a system restart. Parameters: delay (seconds, default 30) and comment. Requires privileges; this will reboot the machine. Example: delay=30, comment='Patch install'. JSON input schema example: {\"type\":\"object\",\"properties\":{\"delay\":{\"type\":\"integer\"},\"comment\":{\"type\":\"string\"}}}")]
+    [McpServerTool(Name = "restart_computer"), Description("Schedules a system restart. Parameters: delay (seconds, default 30) and comment. Requires privileges; this will reboot the machine.")]
     public static string RestartComputer(
-        [System.ComponentModel.DescriptionAttribute("Delay in seconds. Default 30.")] int delay = 30,
-        [System.ComponentModel.DescriptionAttribute("Comment to display.")] string comment = "Restart initiated by MCP.")
+        [Description("Delay in seconds. Default 30.")] int delay = 30,
+        [Description("Comment to display.")] string comment = "Restart initiated by MCP.")
     {
         try
         {
             if (delay < 0) return "Error: delay must be >= 0.";
             if (comment?.Length > 200) return "Error: comment too long (max 200 chars).";
-            Process.Start("shutdown", $"/r /t {delay} /c \"{comment}\"");
+#if WINDOWS_APIS
+            if (OperatingSystem.IsWindows())
+            {
+                Process.Start("shutdown", $"/r /t {delay} /c \"{comment}\"");
+                return $"Restart initiated in {delay} seconds.";
+            }
+#endif
+            var minutes = Math.Max(1, (int)Math.Ceiling(delay / 60.0));
+            if (delay == 0)
+            {
+                OsProcess.Run("shutdown", $"-r now {QuoteShell(comment ?? "")}");
+            }
+            else if (delay < 60)
+            {
+                OsProcess.Run("bash", $"-lc {QuoteShell($"sleep {delay} && shutdown -r now {comment}")}");
+            }
+            else
+            {
+                OsProcess.Run("shutdown", $"-r +{minutes} {QuoteShell(comment ?? "")}");
+            }
+
             return $"Restart initiated in {delay} seconds.";
         }
         catch (Exception ex)
@@ -138,13 +158,22 @@ public class SystemTools
         }
     }
 
-    [McpServerTool(Name = "abort_shutdown"), Description("Attempts to cancel a pending shutdown or restart initiated by the OS shutdown command. Only affects a scheduled shutdown/restart that is currently pending and requires appropriate privileges.")]
+    [McpServerTool(Name = "abort_shutdown"), Description("Attempts to cancel a pending shutdown or restart. Windows: shutdown /a. Linux: shutdown -c.")]
     public static string AbortShutdown()
     {
         try
         {
-            Process.Start("shutdown", "/a");
-            return "Shutdown aborted.";
+#if WINDOWS_APIS
+            if (OperatingSystem.IsWindows())
+            {
+                Process.Start("shutdown", "/a");
+                return "Shutdown aborted.";
+            }
+#endif
+            var result = OsProcess.Run("shutdown", "-c");
+            return result.StartsWith("Error", StringComparison.OrdinalIgnoreCase) || result.StartsWith("Exception", StringComparison.OrdinalIgnoreCase)
+                ? result
+                : "Shutdown aborted.";
         }
         catch (Exception ex)
         {
@@ -152,8 +181,112 @@ public class SystemTools
         }
     }
 
-    [System.Runtime.InteropServices.DllImport("user32.dll")]
+#if WINDOWS_APIS
+    private static List<StartupAppModel> GetWindowsStartupApps()
+    {
+        var apps = new List<StartupAppModel>();
+        string[] runKeys =
+        [
+            @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run",
+            @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Run"
+        ];
+
+        foreach (var keyPath in runKeys)
+        {
+            try
+            {
+                using (var key = Registry.LocalMachine.OpenSubKey(keyPath))
+                {
+                    if (key != null)
+                    {
+                        foreach (var name in key.GetValueNames())
+                        {
+                            apps.Add(new StartupAppModel { Name = name, Command = key.GetValue(name)?.ToString() ?? "", Location = "HKLM" });
+                        }
+                    }
+                }
+
+                using (var key = Registry.CurrentUser.OpenSubKey(keyPath))
+                {
+                    if (key != null)
+                    {
+                        foreach (var name in key.GetValueNames())
+                        {
+                            apps.Add(new StartupAppModel { Name = name, Command = key.GetValue(name)?.ToString() ?? "", Location = "HKCU" });
+                        }
+                    }
+                }
+            }
+            catch { /* ignore */ }
+        }
+
+        return apps;
+    }
+
+    [DllImport("user32.dll")]
     private static extern bool LockWorkStation();
+#endif
+
+    private static List<StartupAppModel> GetLinuxStartupApps()
+    {
+        var apps = new List<StartupAppModel>();
+        var autostartDirs = new[]
+        {
+            Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".config", "autostart"),
+            "/etc/xdg/autostart"
+        };
+
+        foreach (var dir in autostartDirs)
+        {
+            if (!Directory.Exists(dir)) continue;
+            foreach (var file in Directory.EnumerateFiles(dir, "*.desktop"))
+            {
+                try
+                {
+                    string? name = null;
+                    string? exec = null;
+                    foreach (var line in File.ReadLines(file))
+                    {
+                        if (line.StartsWith("Name=", StringComparison.Ordinal))
+                            name = line["Name=".Length..].Trim();
+                        else if (line.StartsWith("Exec=", StringComparison.Ordinal))
+                            exec = line["Exec=".Length..].Trim();
+                    }
+
+                    apps.Add(new StartupAppModel
+                    {
+                        Name = name ?? Path.GetFileNameWithoutExtension(file),
+                        Command = exec ?? file,
+                        Location = dir
+                    });
+                }
+                catch { /* ignore */ }
+            }
+        }
+
+        var (exit, stdout, _) = OsProcess.RunRaw(
+            "systemctl",
+            "--user list-unit-files --type=service --state=enabled --no-pager --no-legend");
+        if (exit == 0)
+        {
+            foreach (var line in stdout.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                var parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                if (parts.Length == 0) continue;
+                apps.Add(new StartupAppModel
+                {
+                    Name = parts[0],
+                    Command = $"systemctl --user start {parts[0]}",
+                    Location = "systemd-user"
+                });
+            }
+        }
+
+        return apps;
+    }
+
+    private static string QuoteShell(string value)
+        => "'" + value.Replace("'", "'\\''") + "'";
 
     public class StartupAppModel
     {
