@@ -21,6 +21,8 @@ jobs:
             runner: windows-11-arm64
           - runtime: win-x64
             runner: windows-latest
+          - runtime: linux-x64
+            runner: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -49,8 +51,16 @@ jobs:
         include:
           - runtime: win-arm64
             runner: windows-11-arm64
+            artifact: winsysmcp.exe
           - runtime: win-x64
             runner: windows-latest
+            artifact: winsysmcp.exe
+          - runtime: linux-x64
+            runner: ubuntu-latest
+            artifact: winsysmcp
+          - runtime: linux-arm64
+            runner: ubuntu-24.04-arm
+            artifact: winsysmcp
 
     steps:
       - uses: actions/checkout@v4
@@ -63,8 +73,18 @@ jobs:
       - name: Publish AOT
         run: dotnet publish src/WinSysMcp -c Release -r ${{ matrix.runtime }} -o publish/${{ matrix.runtime }}
 
+      - name: Smoke get_os_info surface
+        shell: bash
+        run: |
+          set -euo pipefail
+          bin="publish/${{ matrix.runtime }}/${{ matrix.artifact }}"
+          chmod +x "$bin" || true
+          # stdio MCP needs a client; just ensure the binary starts and exits cleanly on EOF
+          printf '' | timeout 5 "$bin"
+          test -x "$bin" || test -f "$bin"
+
       - name: Upload AOT artifact
         uses: actions/upload-artifact@v4
         with:
           name: winsysmcp-${{ matrix.runtime }}
-          path: publish/${{ matrix.runtime }}/winsysmcp.exe
+          path: publish/${{ matrix.runtime }}/${{ matrix.artifact }}

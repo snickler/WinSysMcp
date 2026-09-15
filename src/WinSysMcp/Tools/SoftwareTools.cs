@@ -1,26 +1,33 @@
 using ModelContextProtocol.Server;
 using System.ComponentModel;
+#if WINDOWS_APIS
 using Microsoft.Win32;
+#endif
 
 namespace WinSysMcp.Tools;
 
 [McpServerToolType]
 public class SoftwareTools
 {
-    [McpServerTool(Name = "get_installed_programs"), Description("Lists installed programs discovered in common registry locations used by Windows Add/Remove Programs. Parameter: nameFilter (optional, partial match). Returns metadata such as DisplayName, DisplayVersion and Publisher. Read-only; results depend on privileges and registry virtualization. Example: nameFilter='Visual Studio'. JSON input schema example: {\"type\":\"object\",\"properties\":{\"nameFilter\":{\"type\":\"string\"}}}")]
+    [McpServerTool(Name = "get_installed_programs"), Description("Lists installed programs. On Windows: Add/Remove Programs registry. On Linux: dpkg/rpm package database. Parameter: nameFilter (optional). Read-only.")]
     public static List<InstalledProgramModel> GetInstalledPrograms(
-        [System.ComponentModel.DescriptionAttribute("Filter by program name (partial match). Optional.")] string? nameFilter = null)
+        [Description("Filter by program name (partial match). Optional.")] string? nameFilter = null)
+    {
+#if WINDOWS_APIS
+        if (OperatingSystem.IsWindows())
+            return GetWindowsPrograms(nameFilter);
+#endif
+        return GetLinuxPackages(nameFilter);
+    }
+
+#if WINDOWS_APIS
+    private static List<InstalledProgramModel> GetWindowsPrograms(string? nameFilter)
     {
         var programs = new List<InstalledProgramModel>();
-        string registryKey = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall";
-
-        // Search Current User
+        const string registryKey = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall";
         GetProgramsFromRegistry(Registry.CurrentUser, registryKey, programs, nameFilter);
-        
-        // Search Local Machine (32-bit and 64-bit)
         GetProgramsFromRegistry(Registry.LocalMachine, registryKey, programs, nameFilter);
         GetProgramsFromRegistry(Registry.LocalMachine, @"SOFTWARE\WOW6432Node\Microsoft\Windows\CurrentVersion\Uninstall", programs, nameFilter);
-
         return programs.DistinctBy(p => p.DisplayName).OrderBy(p => p.DisplayName).ToList();
     }
 
@@ -39,8 +46,8 @@ public class SoftwareTools
                 var displayName = subkey.GetValue("DisplayName") as string;
                 if (string.IsNullOrWhiteSpace(displayName)) continue;
 
-                if (!string.IsNullOrEmpty(nameFilter) && 
-                    !displayName.Contains(nameFilter, StringComparison.OrdinalIgnoreCase))
+                if (!string.IsNullOrEmpty(nameFilter)
+                    && !displayName.Contains(nameFilter, StringComparison.OrdinalIgnoreCase))
                 {
                     continue;
                 }
@@ -58,6 +65,74 @@ public class SoftwareTools
         {
             // Ignore permission errors or missing keys
         }
+    }
+#endif
+
+    private static List<InstalledProgramModel> GetLinuxPackages(string? nameFilter)
+    {
+        var programs = new List<InstalledProgramModel>();
+
+        var (dpkgExit, dpkgOut, _) = OsProcess.RunRaw(
+            "dpkg-query",
+            "-W -f=${Package}\\t${Version}\\t${Maintainer}\\t${Installed-Size}\\n");
+        if (dpkgExit == 0)
+        {
+            foreach (var line in dpkgOut.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                var parts = line.Split('\t');
+                var name = parts.ElementAtOrDefault(0) ?? "";
+                if (string.IsNullOrWhiteSpace(name)) continue;
+                if (!string.IsNullOrEmpty(nameFilter)
+                    && !name.Contains(nameFilter, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                programs.Add(new InstalledProgramModel
+                {
+                    DisplayName = name,
+                    DisplayVersion = parts.ElementAtOrDefault(1) ?? "",
+                    Publisher = parts.ElementAtOrDefault(2) ?? "",
+                    InstallDate = ""
+                });
+            }
+
+            return programs.OrderBy(p => p.DisplayName).ToList();
+        }
+
+        var (rpmExit, rpmOut, _) = OsProcess.RunRaw("rpm", "-qa --qf %{NAME}\\t%{VERSION}-%{RELEASE}\\t%{VENDOR}\\t%{INSTALLTIME:date}\\n");
+        if (rpmExit == 0)
+        {
+            foreach (var line in rpmOut.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                var parts = line.Split('\t');
+                var name = parts.ElementAtOrDefault(0) ?? "";
+                if (string.IsNullOrWhiteSpace(name)) continue;
+                if (!string.IsNullOrEmpty(nameFilter)
+                    && !name.Contains(nameFilter, StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                programs.Add(new InstalledProgramModel
+                {
+                    DisplayName = name,
+                    DisplayVersion = parts.ElementAtOrDefault(1) ?? "",
+                    Publisher = parts.ElementAtOrDefault(2) ?? "",
+                    InstallDate = parts.ElementAtOrDefault(3) ?? ""
+                });
+            }
+        }
+        else
+        {
+            programs.Add(new InstalledProgramModel
+            {
+                DisplayName = "error",
+                Publisher = "Neither dpkg-query nor rpm is available on this host."
+            });
+        }
+
+        return programs.OrderBy(p => p.DisplayName).ToList();
     }
 
     public class InstalledProgramModel

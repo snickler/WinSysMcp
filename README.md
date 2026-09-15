@@ -1,31 +1,26 @@
 # WinSysMcp
 
-A [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server that exposes Windows system diagnostics and management tools to AI agents and MCP clients.
+A [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server that exposes common system diagnostics and management tools to AI agents and MCP clients.
 
-Built with .NET 10 and the official [`ModelContextProtocol`](https://github.com/modelcontextprotocol/csharp-sdk) SDK. Supports both standard JIT and **Native AOT** compilation for fast startup and low memory overhead.
+Built with .NET 10 and the official [`ModelContextProtocol`](https://github.com/modelcontextprotocol/csharp-sdk) SDK. Supports both standard JIT and **Native AOT** compilation for fast startup and low memory overhead on **Windows and Linux**.
 
 ---
 
 ## Features
 
-60+ tools organized into focused groups:
+60+ tools organized into focused groups. Most groups have OS-native backends with the **same tool names**:
 
-| Group | Tools |
-|---|---|
-| **Disk** | Drive info, folder size |
-| **Event Logs** | Query Application/System/Security logs with filters |
-| **Files** | Read, write, search, copy, move, diff, hash, encoding-aware edits |
-| **Network** | Ping, DNS lookup, TCP check, interfaces, ARP, firewall rules, route table, DNS cache |
-| **Performance** | CPU %, available memory, uptime |
-| **Processes** | List top processes, details by PID, start/kill |
-| **Registry** | Read, write, list, delete keys and values |
-| **Reliability** | WMI reliability records (crashes, failures) |
-| **Services** | List, get details, start, stop |
-| **Software** | Installed programs from registry |
-| **System** | OS version, system info, environment variables, startup apps, uptime, shutdown/restart |
-| **Task Scheduler** | Query scheduled tasks |
-| **Power & Security** | Battery status, current user, local users/groups, group membership |
-| **WMI** | BIOS, CPU, GPU, printers, sound devices, startup commands |
+| Group | Windows | Linux |
+|---|---|---|
+| **Disk / Files / Processes / Network** | .NET BCL | .NET BCL |
+| **Performance** | Performance Counters | `/proc` |
+| **Event Logs** | Windows Event Log | `journalctl` |
+| **Services** | Service Controller | `systemctl` |
+| **Software** | Uninstall registry | `dpkg` / `rpm` |
+| **Startup apps** | Run keys | `.desktop` + systemd user units |
+| **Task Scheduler** | `schtasks` | systemd timers + crontab |
+| **Network advanced** | `arp` / `route` / `netsh` | `ip` / `nft` / `resolvectl` |
+| **Registry / WMI** | Full | Not registered (Windows-only) |
 
 See [`docs/TOOLS.md`](docs/TOOLS.md) for the complete annotated tool catalog, or [`docs/TOOLS_SCHEMA.json`](docs/TOOLS_SCHEMA.json) for the machine-readable schema.
 
@@ -33,9 +28,9 @@ See [`docs/TOOLS.md`](docs/TOOLS.md) for the complete annotated tool catalog, or
 
 ## Requirements
 
-- Windows 10/11 or Windows Server 2019+
+- Windows 10/11 / Windows Server 2019+, **or** a modern Linux distro with the usual userspace tools (`systemctl`, `journalctl`, `ip`, …)
 - [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0) (for building from source)
-- Some tools require **Administrator privileges** (Event Logs, WMI, Service control, etc.)
+- Some tools require elevated privileges (Event Logs / journal, service control, firewall, shutdown)
 
 ---
 
@@ -43,15 +38,15 @@ See [`docs/TOOLS.md`](docs/TOOLS.md) for the complete annotated tool catalog, or
 
 ### Option A — Download a release binary
 
-Download the latest `winsysmcp.exe` from the [Releases](../../releases) page. No .NET runtime required — it's a self-contained Native AOT executable.
+Download the latest RID-matched binary from [Releases](../../releases) (e.g. `winsysmcp-win-x64.exe` or `winsysmcp-linux-x64`). No .NET runtime required — self-contained Native AOT.
 
-> **Note:** The AOT build omits three tool groups that depend on WMI reflection (`WmiTools`, `ReliabilityTools`, `PowerAndSecurityTools`). Use the JIT build if you need those tools.
+> **Note:** The AOT build omits WMI/reliability/account-management tool groups that depend on Windows reflection APIs. Use the JIT build on Windows if you need those tools.
 
 ### Option B — Run from source
 
 ```powershell
-git clone https://github.com/<your-org>/winsysmcp.git
-cd winsysmcp
+git clone https://github.com/snickler/WinSysMcp.git
+cd WinSysMcp
 dotnet run --project src/WinSysMcp
 ```
 
@@ -61,64 +56,34 @@ The server communicates over **stdio** using JSON-RPC (standard MCP transport). 
 
 ## MCP Client Configuration
 
-### Claude Desktop (`claude_desktop_config.json`)
+### Claude Desktop / VS Code / Copilot
 
-```json
-{
-  "mcpServers": {
-    "winsysmcp": {
-      "command": "C:\\path\\to\\winsysmcp.exe"
-    }
-  }
-}
-```
+Point `command` at the AOT binary (`.exe` on Windows, no extension on Linux), or use `dotnet run --project …` from source.
 
-Or if running from source:
-
-```json
-{
-  "mcpServers": {
-    "winsysmcp": {
-      "command": "dotnet",
-      "args": ["run", "--project", "C:\\path\\to\\winsysmcp\\src\\WinSysMcp"]
-    }
-  }
-}
-```
-
-### VS Code / GitHub Copilot (`mcp.json`)
-
-```json
-{
-  "servers": {
-    "winsysmcp": {
-      "type": "stdio",
-      "command": "C:\\path\\to\\winsysmcp.exe"
-    }
-  }
-}
-```
+Orchesttui looks for `winsysmcp` / `winsysmcp.exe` next to its own binary, or `ORCHESTTUI_WINSYS_MCP` for an override path.
 
 ---
 
 ## Building
 
-### Debug (JIT) — includes all tools
+### Debug (JIT)
 
 ```powershell
 dotnet build src/WinSysMcp
 ```
 
-### Release — Native AOT (win-arm64 by default)
+On Windows this enables the full Windows API surface (registry, services, event log). On Linux the same project builds with Linux backends and omits registry/WMI sources.
+
+### Release — Native AOT
 
 ```powershell
-dotnet publish src/WinSysMcp -c Release
-```
-
-To target x64 instead, override the runtime identifier:
-
-```powershell
+# Windows host
 dotnet publish src/WinSysMcp -c Release -r win-x64
+dotnet publish src/WinSysMcp -c Release -r win-arm64
+
+# Linux host (Native AOT cannot cross-OS compile)
+dotnet publish src/WinSysMcp -c Release -r linux-x64
+dotnet publish src/WinSysMcp -c Release -r linux-arm64
 ```
 
 ---
@@ -129,13 +94,11 @@ dotnet publish src/WinSysMcp -c Release -r win-x64
 dotnet test tests/WinSysMcp.Tests
 ```
 
-GitHub Actions CI/CD now runs the test suite and Native AOT publishes as matching runtime matrices: `win-arm64` tests/publishes run on `windows-11-arm64`, `win-x64` tests/publishes run on the standard Windows runner, and tagged releases wait for both the test and AOT matrices before publishing.
+CI runs tests on `win-x64`, `win-arm64`, and `linux-x64`, and publishes AOT artifacts for those RIDs plus `linux-arm64`.
 
 ---
 
 ## Regenerating the Tool Catalog
-
-The `docs/TOOLS.md` and `docs/TOOLS_SCHEMA.json` files are generated from source metadata:
 
 ```powershell
 dotnet run --project tools/WinSysMcp.ToolSchemaGen
@@ -148,14 +111,13 @@ dotnet run --project tools/WinSysMcp.ToolSchemaGen
 ```
 winsysmcp/
 ├── src/WinSysMcp/
-│   ├── Tools/          # One file per tool group
+│   ├── Tools/          # One file per tool group (Win + Linux backends)
 │   ├── Serialization/  # AOT-safe JSON serialization context
+│   ├── OsProcess.cs    # Shared process helper
 │   └── Program.cs      # Host setup and tool registration
 ├── tests/WinSysMcp.Tests/
-├── tools/WinSysMcp.ToolSchemaGen/   # Doc generator
+├── tools/WinSysMcp.ToolSchemaGen/
 └── docs/
-    ├── TOOLS.md         # Human-readable tool catalog
-    └── TOOLS_SCHEMA.json
 ```
 
 ---

@@ -2,33 +2,28 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using ModelContextProtocol.Server;
+using System.Reflection;
 using System.Text.Json;
 using WinSysMcp.Serialization;
 using WinSysMcp.Tools;
-
-using System.Reflection;
 
 // Only start the server when running as the entry assembly. This prevents the
 // Program's top-level startup from executing during unit tests or when the
 // assembly is referenced by other projects.
 if (Assembly.GetEntryAssembly() == Assembly.GetExecutingAssembly())
 {
-    // Create the Host Application Builder
     var builder = Host.CreateApplicationBuilder(args);
 
     // Configure logging to stderr to avoid interfering with MCP stdio transport
-    // MCP uses standard input/output for JSON-RPC communication.
-    // Any logs written to stdout will corrupt the protocol.
     builder.Logging.AddConsole(options =>
     {
         options.LogToStandardErrorThreshold = LogLevel.Trace;
     });
 
-    // Register MCP Server and Transport
-        var toolJsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
-        toolJsonOptions.TypeInfoResolverChain.Insert(0, WinSysMcpToolJsonContext.Default);
+    var toolJsonOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web);
+    toolJsonOptions.TypeInfoResolverChain.Insert(0, WinSysMcpToolJsonContext.Default);
 
-    builder.Services
+    var mcp = builder.Services
         .AddMcpServer()
         .WithStdioServerTransport()
         .WithTools<DiskTools>(toolJsonOptions)
@@ -37,24 +32,24 @@ if (Assembly.GetEntryAssembly() == Assembly.GetExecutingAssembly())
         .WithTools<NetworkAdvancedTools>(toolJsonOptions)
         .WithTools<NetworkTools>(toolJsonOptions)
         .WithTools<PerformanceTools>(toolJsonOptions)
-    #if !AOT_SAFE
-        .WithTools<PowerTools>(toolJsonOptions)
-        .WithTools<SecurityTools>(toolJsonOptions)
-    #endif
         .WithTools<ProcessTools>(toolJsonOptions)
-        .WithTools<RegistryTools>(toolJsonOptions)
-    #if !AOT_SAFE
-        .WithTools<ReliabilityTools>(toolJsonOptions)
-    #endif
         .WithTools<ServiceTools>(toolJsonOptions)
         .WithTools<SoftwareTools>(toolJsonOptions)
         .WithTools<SystemTools>(toolJsonOptions)
-        .WithTools<TaskSchedulerTools>(toolJsonOptions)
-    #if !AOT_SAFE
+        .WithTools<TaskSchedulerTools>(toolJsonOptions);
+
+#if WINDOWS_APIS
+    mcp = mcp.WithTools<RegistryTools>(toolJsonOptions);
+#if !AOT_SAFE
+    mcp = mcp
+        .WithTools<PowerTools>(toolJsonOptions)
+        .WithTools<SecurityTools>(toolJsonOptions)
+        .WithTools<ReliabilityTools>(toolJsonOptions)
         .WithTools<WmiTools>(toolJsonOptions);
-    #else
-        ;
-    #endif
+#endif
+#endif
+
+    _ = mcp;
 
     var app = builder.Build();
     await app.RunAsync();
