@@ -18,7 +18,7 @@ jobs:
       matrix:
         include:
           - runtime: win-arm64
-            runner: windows-11-arm64
+            runner: windows-11-arm
           - runtime: win-x64
             runner: windows-latest
           - runtime: linux-x64
@@ -50,7 +50,7 @@ jobs:
       matrix:
         include:
           - runtime: win-arm64
-            runner: windows-11-arm64
+            runner: windows-11-arm
             artifact: winsysmcp.exe
           - runtime: win-x64
             runner: windows-latest
