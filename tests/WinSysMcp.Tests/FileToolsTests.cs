@@ -62,7 +62,7 @@ public class FileToolsTests : IDisposable
     [Fact]
     public void DeleteDirectory_RefuseRoot()
     {
-        var res = FileTools.DeleteDirectory("C:\\");
+        var res = FileTools.DeleteDirectory(Path.GetPathRoot(Path.GetTempPath())!);
         Assert.Equal("Refusing to delete a root path.", res);
     }
 

@@ -264,8 +264,8 @@ public class FileTools
         try
         {
             if (string.IsNullOrWhiteSpace(path)) return "Error: path required.";
+            if (IsRootPath(path)) return "Refusing to delete a root path.";
             if (!Path.IsPathRooted(path)) return "Error: path must be absolute.";
-            if (path.Length <= 3 && path[1] == ':') return "Refusing to delete a root path.";
             if (!Directory.Exists(path)) return $"Directory '{path}' not found.";
             Directory.Delete(path, recursive);
             return $"Successfully deleted directory '{path}'.";
@@ -1326,6 +1326,47 @@ public class FileTools
         }
 
         return true;
+    }
+
+    private static bool IsRootPath(string path)
+    {
+        if (LooksLikeWindowsDriveRoot(path))
+        {
+            return true;
+        }
+
+        if (!Path.IsPathRooted(path))
+        {
+            return false;
+        }
+
+        var fullPath = Path.GetFullPath(path);
+        var root = Path.GetPathRoot(fullPath);
+        if (string.IsNullOrEmpty(root))
+        {
+            return false;
+        }
+
+        return string.Equals(
+            fullPath.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar),
+            root.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar),
+            StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool LooksLikeWindowsDriveRoot(string path)
+    {
+        var trimmed = path.Trim();
+        if (trimmed.Length < 3 || !char.IsAsciiLetter(trimmed[0]) || trimmed[1] != ':')
+        {
+            return false;
+        }
+
+        if (trimmed[2] is not ('\\' or '/'))
+        {
+            return false;
+        }
+
+        return trimmed[3..].Trim('\\', '/').Length == 0;
     }
 
     private static bool PathEqualsOrIsChildOf(string candidate, string parent)

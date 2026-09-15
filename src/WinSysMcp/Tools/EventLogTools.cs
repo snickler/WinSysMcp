@@ -82,11 +82,17 @@ public class EventLogTools
         try
         {
             var scope = string.IsNullOrWhiteSpace(logName) ? "system" : logName.Trim();
+            var isNamedUnitScope = false;
             // Map common Windows log names to journal defaults for agent familiarity.
             if (scope.Equals("Application", StringComparison.OrdinalIgnoreCase)
                 || scope.Equals("System", StringComparison.OrdinalIgnoreCase))
             {
                 scope = "system";
+            }
+            else if (!scope.Equals("system", StringComparison.OrdinalIgnoreCase)
+                && !scope.Equals("user", StringComparison.OrdinalIgnoreCase))
+            {
+                isNamedUnitScope = true;
             }
 
             var args = $"--no-pager -o json -n {maxEvents}";
@@ -165,6 +171,11 @@ public class EventLogTools
                     });
                 }
             }
+
+            if (results.Count == 0 && isNamedUnitScope)
+            {
+                TryAddMissingUnitError(results, scope);
+            }
         }
         catch (Exception ex)
         {
@@ -177,6 +188,33 @@ public class EventLogTools
 
         return results;
     }
+
+    private static void TryAddMissingUnitError(List<EventLogEntryModel> results, string scope)
+    {
+        var unit = NormalizeSystemdUnitName(scope);
+        var (exit, stdout, stderr) = OsProcess.RunRaw("systemctl", $"status {Quote(unit)} --no-pager");
+        if (exit == 0) return;
+
+        var errorText = string.IsNullOrWhiteSpace(stderr) ? stdout : stderr;
+        if (string.IsNullOrWhiteSpace(errorText)) return;
+
+        var trimmed = errorText.Trim();
+        if (!trimmed.Contains("could not be found", StringComparison.OrdinalIgnoreCase)
+            && !trimmed.Contains("not found", StringComparison.OrdinalIgnoreCase)
+            && !trimmed.Contains("no files found", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        results.Add(new EventLogEntryModel
+        {
+            Message = $"Error retrieving logs: {trimmed}",
+            EntryType = "Error"
+        });
+    }
+
+    private static string NormalizeSystemdUnitName(string scope)
+        => scope.Contains('.', StringComparison.Ordinal) ? scope : $"{scope}.service";
 
     private static string? MapPriority(string entryType)
         => entryType.ToLowerInvariant() switch
