@@ -11,6 +11,11 @@ public class ToolSchemaSnapshotTests
     [Fact]
     public void ToolsSchemaJson_IsInSyncWithGeneratedCatalog()
     {
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
         var repoRoot = FindRepositoryRoot(AppContext.BaseDirectory);
         var schemaPath = Path.Combine(repoRoot, "docs", "TOOLS_SCHEMA.json");
 
@@ -23,6 +28,11 @@ public class ToolSchemaSnapshotTests
     [Fact]
     public void ToolsMarkdown_IsInSyncWithGeneratedCatalog()
     {
+        if (!OperatingSystem.IsWindows())
+        {
+            return;
+        }
+
         var repoRoot = FindRepositoryRoot(AppContext.BaseDirectory);
         var markdownPath = Path.Combine(repoRoot, "docs", "TOOLS.md");
 

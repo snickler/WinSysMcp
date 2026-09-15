@@ -79,15 +79,17 @@ internal static class OsProcess
             };
 
             process.Start();
+            var stdoutTask = process.StandardOutput.ReadToEndAsync();
+            var stderrTask = process.StandardError.ReadToEndAsync();
             if (!process.WaitForExit(timeoutMs))
             {
                 try { process.Kill(entireProcessTree: true); } catch { /* ignore */ }
                 return (-1, "", $"timed out after {timeoutMs}ms");
             }
 
-            var stdout = process.StandardOutput.ReadToEnd();
-            var stderr = process.StandardError.ReadToEnd();
-            return (process.ExitCode, stdout, stderr);
+            process.WaitForExit();
+            Task.WaitAll(stdoutTask, stderrTask);
+            return (process.ExitCode, stdoutTask.Result, stderrTask.Result);
         }
         catch (Exception ex)
         {

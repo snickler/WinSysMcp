@@ -100,7 +100,7 @@ public class SoftwareTools
             return programs.OrderBy(p => p.DisplayName).ToList();
         }
 
-        var (rpmExit, rpmOut, _) = OsProcess.RunRaw("rpm", "-qa --qf '%{NAME}\\t%{VERSION}-%{RELEASE}\\t%{VENDOR}\\t%{INSTALLTIME:date}\\n'");
+        var (rpmExit, rpmOut, _) = OsProcess.RunRaw("rpm", "-qa --qf %{NAME}\\t%{VERSION}-%{RELEASE}\\t%{VENDOR}\\t%{INSTALLTIME:date}\\n");
         if (rpmExit == 0)
         {
             foreach (var line in rpmOut.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))

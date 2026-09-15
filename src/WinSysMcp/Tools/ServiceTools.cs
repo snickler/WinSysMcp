@@ -218,7 +218,7 @@ public class ServiceTools
             : serviceName + ".service";
         var (exit, stdout, stderr) = OsProcess.RunRaw(
             "systemctl",
-            $"show {Quote(unit)} --no-page --property=Id,Description,ActiveState,SubState,CanStop,FragmentPath");
+            $"show {Quote(unit)} --no-pager --property=Id,Description,ActiveState,SubState,CanStop,FragmentPath");
         if (exit != 0) return null;
 
         var map = ParseSystemdShow(stdout);

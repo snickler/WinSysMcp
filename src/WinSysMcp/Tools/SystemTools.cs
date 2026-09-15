@@ -99,18 +99,18 @@ public class SystemTools
 #endif
             // GNU shutdown: +minutes; for seconds use systemd-run or sleep+shutdown.
             var minutes = Math.Max(1, (int)Math.Ceiling(delay / 60.0));
+            string result;
             if (delay == 0)
             {
-                OsProcess.Run("shutdown", $"-h now {QuoteShell(comment ?? "")}");
-            }
-            else if (delay < 60)
-            {
-                OsProcess.Run("bash", $"-lc {QuoteShell($"sleep {delay} && shutdown -h now {comment}")}");
+                result = OsProcess.Run("shutdown", $"-h now {QuoteArgument(comment ?? "")}");
             }
             else
             {
-                OsProcess.Run("shutdown", $"-h +{minutes} {QuoteShell(comment ?? "")}");
+                result = OsProcess.Run("shutdown", $"-h +{minutes} {QuoteArgument(comment ?? "")}");
             }
+
+            if (IsProcessError(result))
+                return result;
 
             return $"Shutdown initiated in {delay} seconds.";
         }
@@ -137,18 +137,18 @@ public class SystemTools
             }
 #endif
             var minutes = Math.Max(1, (int)Math.Ceiling(delay / 60.0));
+            string result;
             if (delay == 0)
             {
-                OsProcess.Run("shutdown", $"-r now {QuoteShell(comment ?? "")}");
-            }
-            else if (delay < 60)
-            {
-                OsProcess.Run("bash", $"-lc {QuoteShell($"sleep {delay} && shutdown -r now {comment}")}");
+                result = OsProcess.Run("shutdown", $"-r now {QuoteArgument(comment ?? "")}");
             }
             else
             {
-                OsProcess.Run("shutdown", $"-r +{minutes} {QuoteShell(comment ?? "")}");
+                result = OsProcess.Run("shutdown", $"-r +{minutes} {QuoteArgument(comment ?? "")}");
             }
+
+            if (IsProcessError(result))
+                return result;
 
             return $"Restart initiated in {delay} seconds.";
         }
@@ -285,8 +285,12 @@ public class SystemTools
         return apps;
     }
 
-    private static string QuoteShell(string value)
-        => "'" + value.Replace("'", "'\\''") + "'";
+    private static bool IsProcessError(string result)
+        => result.StartsWith("Error", StringComparison.OrdinalIgnoreCase)
+            || result.StartsWith("Exception", StringComparison.OrdinalIgnoreCase);
+
+    private static string QuoteArgument(string value)
+        => "\"" + value.Replace("\\", "\\\\").Replace("\"", "\\\"") + "\"";
 
     public class StartupAppModel
     {
